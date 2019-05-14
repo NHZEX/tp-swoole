@@ -10,7 +10,7 @@ use Swoole\Http\Response;
 use Swoole\Runtime;
 use Swoole\Server\Task;
 use Swoole\WebSocket\Frame;
-use Swoole\WebSocket\Server as WebSocketServer;
+use Swoole\WebSocket\Server;
 use think\facade\Env;
 use Throwable;
 
@@ -39,7 +39,7 @@ class Manager
     {
         Runtime::enableCoroutine(true);
 
-        $this->swoole = new WebSocketServer($host, $port, $mode, $sockType);
+        $this->swoole = new Server($host, $port, $mode, $sockType);
         $this->swoole->set($option);
 
         $this->swoole->addProcess((new FileMonitor($this))->makeProcess());
@@ -61,7 +61,7 @@ class Manager
 
     /**
      * 获取SwooleServer实例
-     * @return WebSocketServer
+     * @return Server
      */
     public function getSwoole()
     {
@@ -78,9 +78,9 @@ class Manager
 
     /**
      * 主进程启动
-     * @param WebSocketServer $server
+     * @param Server $server
      */
-    protected function onStart(WebSocketServer $server)
+    protected function onStart(Server $server)
     {
         swoole_set_process_name('php-ps: master');
         $this->pid = $server->master_pid;
@@ -88,19 +88,19 @@ class Manager
 
     /**
      * 管理进程启动
-     * @param WebSocketServer $server
+     * @param Server $server
      */
-    protected function onManagerStart(WebSocketServer $server)
+    protected function onManagerStart(Server $server)
     {
         swoole_set_process_name('php-ps: manager');
     }
 
     /**
      * 工作进程启动（Worker/Task）
-     * @param WebSocketServer $server
-     * @param int             $workerId
+     * @param Server $server
+     * @param int    $workerId
      */
-    protected function onWorkerStart(WebSocketServer $server, int $workerId)
+    protected function onWorkerStart(Server $server, int $workerId)
     {
         $type = $server->taskworker ? 'task' : 'worker';
         swoole_set_process_name("php-ps: {$type}#{$workerId}");
@@ -112,10 +112,10 @@ class Manager
 
     /**
      * 任务处理回调
-     * @param WebSocketServer $server
-     * @param Task            $task
+     * @param Server $server
+     * @param Task   $task
      */
-    protected function onTask(WebSocketServer $server, Task $task)
+    protected function onTask(Server $server, Task $task)
     {
         //完成任务，结束并返回数据
         $task->finish(true);
@@ -123,23 +123,23 @@ class Manager
 
     /**
      * 任务完成响应
-     * @param WebSocketServer $server
-     * @param int             $taskId
-     * @param string          $data
+     * @param Server $server
+     * @param int    $taskId
+     * @param string $data
      */
-    protected function onFinish(WebSocketServer $server, int $taskId, string $data)
+    protected function onFinish(Server $server, int $taskId, string $data)
     {
     }
 
     /**
      * 工作进程异常（Worker/Task）
-     * @param WebSocketServer $server
-     * @param int             $workerId
-     * @param int             $workerPid
-     * @param int             $exitCode
-     * @param int             $signal
+     * @param Server $server
+     * @param int    $workerId
+     * @param int    $workerPid
+     * @param int    $exitCode
+     * @param int    $signal
      */
-    protected function onWorkerError(WebSocketServer $server, int $workerId, int $workerPid, int $exitCode, int $signal)
+    protected function onWorkerError(Server $server, int $workerId, int $workerPid, int $exitCode, int $signal)
     {
         echo "WorkerError: $workerId, pid: $workerPid, execCode: $exitCode, signal: $signal\n";
         if ($this->http instanceof Http) {
@@ -162,29 +162,29 @@ class Manager
 
     /**
      * 连接建立回调（WebSocket）
-     * @param WebSocketServer $server
-     * @param Request         $request
+     * @param Server  $server
+     * @param Request $request
      */
-    protected function onOpen(WebSocketServer $server, Request $request)
+    protected function onOpen(Server $server, Request $request)
     {
     }
 
     /**
      * 消息到达回调（WebSocket）
-     * @param WebSocketServer $server
+     * @param Server          $server
      * @param                 $frame
      * @throws Exception
      */
-    protected function onMessage(WebSocketServer $server, Frame $frame)
+    protected function onMessage(Server $server, Frame $frame)
     {
     }
 
     /**
      * 连接关闭回调（WebSocket）
-     * @param WebSocketServer $server
+     * @param Server          $server
      * @param                 $fd
      */
-    protected function onClose(WebSocketServer $server, $fd)
+    protected function onClose(Server $server, $fd)
     {
     }
 }

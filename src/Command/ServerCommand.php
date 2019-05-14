@@ -36,8 +36,8 @@ class ServerCommand extends Command
 
     public function configure()
     {
-        $this->setName('serv')
-            ->addArgument('action', Argument::OPTIONAL, "start|stop|restart|reload", 'start')
+        $this->setName('server')
+            ->addArgument('action', Argument::OPTIONAL, "conf|start|stop|restart|reload", 'start')
             ->addOption('host', 'H', Option::VALUE_OPTIONAL, 'the host of swoole server.', null)
             ->addOption('port', 'p', Option::VALUE_OPTIONAL, 'the port of swoole server.', null)
             ->addOption('daemon', 'd', Option::VALUE_NONE, 'Run the swoole server in daemon mode.')
@@ -131,10 +131,10 @@ class ServerCommand extends Command
 
         $this->init();
 
-        if (in_array($action, ['start', 'stop', 'reload', 'restart'])) {
+        if (in_array($action, ['conf', 'start', 'stop', 'reload', 'restart'])) {
             $this->$action();
         } else {
-            $output->writeln("<error>Invalid argument action:{$action}, Expected start|stop|restart|reload .</error>");
+            $output->writeln("<error>Invalid argument action:{$action}, Expected conf|start|stop|restart|reload .</error>");
         }
     }
 
@@ -165,6 +165,14 @@ class ServerCommand extends Command
         }
 
         return Process::kill($pid, 0);
+    }
+
+    /**
+     * 生成配置文件
+     */
+    protected function conf()
+    {
+        // TODO 生成配置文件
     }
 
     /**
