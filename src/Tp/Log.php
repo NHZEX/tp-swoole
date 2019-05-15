@@ -1,6 +1,6 @@
 <?php
 
-namespace app\Swoole\Tp;
+namespace HZEX\TpSwoole\Tp;
 
 class Log extends \think\Log
 {

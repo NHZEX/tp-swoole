@@ -1,11 +1,11 @@
 <?php
 
-namespace app\Swoole;
+namespace HZEX\TpSwoole;
 
-use app\Swoole\Tp\App;
-use app\Swoole\Tp\Cookie;
-use app\Swoole\Tp\Log;
-use app\Swoole\Tp\Session;
+use HZEX\TpSwoole\Tp\App;
+use HZEX\TpSwoole\Tp\Cookie;
+use HZEX\TpSwoole\Tp\Log;
+use HZEX\TpSwoole\Tp\Session;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\WebSocket\Server;

@@ -9,7 +9,7 @@
 // | Author: liu21st <liu21st@gmail.com>
 // +----------------------------------------------------------------------
 
-namespace app\Swoole\Tp\Log\Driver;
+namespace HZEX\TpSwoole\Tp\Log\Driver;
 
 use Exception;
 use think\App;

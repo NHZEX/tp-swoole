@@ -8,7 +8,7 @@
 // +----------------------------------------------------------------------
 // | Author: liu21st <liu21st@gmail.com>
 // +----------------------------------------------------------------------
-namespace app\Swoole\Tp;
+namespace HZEX\TpSwoole\Tp;
 
 use Swoole\Http\Response;
 use think\Cookie as BaseCookie;

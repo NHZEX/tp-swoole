@@ -9,9 +9,9 @@
 // | Author: liu21st <liu21st@gmail.com>
 // +----------------------------------------------------------------------
 
-namespace app\Swoole\Command;
+namespace HZEX\TpSwoole\Command;
 
-use app\Swoole\Manager;
+use HZEX\TpSwoole\Manager;
 use Swoole\Process;
 use think\console\Command;
 use think\console\Input;

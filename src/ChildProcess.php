@@ -1,6 +1,6 @@
 <?php
 
-namespace app\Swoole;
+namespace HZEX\TpSwoole;
 
 use Closure;
 use Swoole\Coroutine;

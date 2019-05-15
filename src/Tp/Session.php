@@ -8,7 +8,7 @@
 // +----------------------------------------------------------------------
 // | Author: liu21st <liu21st@gmail.com>
 // +----------------------------------------------------------------------
-namespace app\Swoole\Tp;
+namespace HZEX\TpSwoole\Tp;
 
 use think\facade\Cache;
 use think\facade\Cookie as ThinkCookie;

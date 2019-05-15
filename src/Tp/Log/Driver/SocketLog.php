@@ -9,7 +9,7 @@
 // | Author: luofei614 <weibo.com/luofei614>
 // +----------------------------------------------------------------------
 
-namespace app\Swoole\Tp\Log\Driver;
+namespace HZEX\TpSwoole\Tp\Log\Driver;
 
 use Exception;
 use Swoole\Client;

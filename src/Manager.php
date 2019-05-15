@@ -1,10 +1,10 @@
 <?php
 
-namespace app\Swoole;
+namespace HZEX\TpSwoole;
 
-use app\Swoole\ChildProcess\FileMonitor;
 use Closure;
 use Exception;
+use HZEX\TpSwoole\Process\Child\FileMonitor;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Runtime;
