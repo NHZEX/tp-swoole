@@ -42,6 +42,9 @@ class ServerCommand extends Command
             ->addOption('port', 'p', Option::VALUE_OPTIONAL, 'the port of swoole server.', null)
             ->addOption('daemon', 'd', Option::VALUE_NONE, 'Run the swoole server in daemon mode.')
             ->setDescription('Swoole Server for ThinkPHP');
+
+        // 不执行事件循环
+        swoole_event_exit();
     }
 
     /**
@@ -133,8 +136,14 @@ class ServerCommand extends Command
 
         if (in_array($action, ['conf', 'start', 'stop', 'reload', 'restart'])) {
             $this->$action();
+            if (false === in_array($action, ['start', 'restart'])) {
+                // 不执行事件循环
+                swoole_event_exit();
+            }
         } else {
-            $output->writeln("<error>Invalid argument action:{$action}, Expected conf|start|stop|restart|reload .</error>");
+            $output->writeln(
+                "<error>Invalid argument action:{$action}, Expected conf|start|stop|restart|reload .</error>"
+            );
         }
     }
 
