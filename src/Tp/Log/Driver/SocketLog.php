@@ -13,7 +13,9 @@ namespace HZEX\TpSwoole\Tp\Log\Driver;
 
 use Exception;
 use Swoole\Client;
+use Swoole\Http\Server;
 use think\App;
+use think\exception\ClassNotFoundException;
 
 /**
  * github: https://github.com/luofei614/SocketLog
@@ -265,31 +267,31 @@ class SocketLog
      */
     protected function send($host, $message = '', $address = '/')
     {
-        $client = new Client(SWOOLE_SOCK_TCP, SWOOLE_SOCK_ASYNC);
-        $client->on('connect', function (Client $c) use ($host, $address, $message) {
-            $header = "POST {$address} HTTP/1.1\r\n";
-            $header .= "Host: {$host}\r\n";
-            $header .= "Content-Type: application/json;charset=UTF-8\r\n";
-            $header .=  "Content-Length: " . strlen($message) . "\r\n\r\n";
-            $header .= $message;
+        if (false === $this->app->has('swoole.server')) {
+            $url = 'http://' . $host . ':' . $this->port . $address;
+            $ch  = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $message);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            $headers = [
+                "Content-Type: application/json;charset=UTF-8",
+            ];
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers); //设置header
+            return curl_exec($ch);
+        }
 
-            $bytes = 0;
-            $block = 524288;
-            $fre = ceil(strlen($header) / $block);
-            for ($i = 0; $i < $fre; $i++) {
-                $bytes += $c->send(substr($header, $i * $block, $block));
-            }
-            if ($bytes !== strlen($header)) {
-                throw new Exception('数据发送长度与实际长度不一致');
-            }
-        });
-        $client->on('receive', function (Client $c, string $data) {
-        });
-        $client->on('error', function (Client $c) {
-        });
-        $client->on('close', function (Client $c) {
-        });
-        $client->connect($host, $this->port, 6);
+        /** @var Server $server */
+        $server = $this->app->make('swoole.server');
+        $server->task([
+            'action' => static::class,
+            'host' => $host,
+            'port' => $this->port,
+            'address' => $address,
+            'message' => $message,
+        ]);
         return true;
     }
 }

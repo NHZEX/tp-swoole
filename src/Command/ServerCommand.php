@@ -47,11 +47,39 @@ class ServerCommand extends Command
         swoole_event_exit();
     }
 
+    protected function environment()
+    {
+        $success = true;
+        $this->output->info("----------------------- ENVIRONMENT -----------------------------");
+        $extensions = ['swoole', 'pcntl', 'posix', 'redis'];
+        foreach ($extensions as $extension) {
+            $exist = extension_loaded($extension);
+            if ($success && false === $exist) {
+                $success = false;
+            }
+            $existText = $exist ? '[+]' : '<error>[-]</error>';
+            $ver = phpversion($extension) ?: 'null';
+            $this->output->info("$existText {$extension} ({$ver})");
+        }
+
+        $notExist = ['xdebug'];
+        foreach ($notExist as $extension) {
+            $exist = extension_loaded($extension);
+            if ($success && $exist) {
+                $success = false;
+            }
+            $existText = $exist ? '<error>[Err]</error>' : '[Yes]';
+            $this->output->info("{$existText} Can't exist {$extension}");
+        }
+        return $success;
+    }
+
     /**
      * 初始化
      */
     protected function init()
     {
+        $this->output->info("--------------------------- INIT --------------------------------");
         $config = Config::pull('swoole');
 
         // 获取 host 设置
@@ -132,6 +160,10 @@ class ServerCommand extends Command
     {
         $action = $input->getArgument('action');
 
+        if (false === $this->environment()) {
+            $this->output->error("环境不符合要求");
+            return 1;
+        }
         $this->init();
 
         if (in_array($action, ['conf', 'start', 'stop', 'reload', 'restart'])) {
@@ -145,6 +177,7 @@ class ServerCommand extends Command
                 "<error>Invalid argument action:{$action}, Expected conf|start|stop|restart|reload .</error>"
             );
         }
+        return 0;
     }
 
     /**

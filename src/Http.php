@@ -19,32 +19,36 @@ class Http
 {
     /** @var App */
     protected $app;
+    /** @var Server */
+    protected $server;
+    /** @var int */
+    protected $workerId;
     /** @var string */
     protected $appPath;
 
-    public function __construct(string $path)
+    public function __construct(Server $server, int $workerId, string $path)
     {
+        $this->server = $server;
+        $this->workerId = $workerId;
         $this->appPath = $path;
+
+        $this->start();
     }
 
     /**
      * 启动
-     * @param Server $server
-     * @param int     $workerId
      */
-    public function httpStart(Server $server, int $workerId)
+    public function start()
     {
         // 应用实例化
         $this->app = new App($this->appPath);
         // 重新绑定日志类
         $this->app->bindTo('log', Log::class);
 
-        //swoole server worker启动行为
-        $hook = Container::get('hook');
-        $hook->listen('swoole_worker_start', ['server' => $server, 'worker_id' => $workerId]);
-
-        // Swoole Server保存到容器
-        $this->app->bindTo('swoole', $server);
+        $this->app->bindTo('swoole.server', $this->server);
+        $this->app->bindTo('swoole.worker.id', function () {
+            return $this->workerId;
+        });
 
         Facade::bind([
             CookieFacade::class => Cookie::class,

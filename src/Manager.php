@@ -5,6 +5,8 @@ namespace HZEX\TpSwoole;
 use Closure;
 use Exception;
 use HZEX\TpSwoole\Process\Child\FileMonitor;
+use HZEX\TpSwoole\Tp\Log\Driver\SocketLog;
+use Swoole\Coroutine\Http\Client;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Runtime;
@@ -105,8 +107,7 @@ class Manager
         $type = $server->taskworker ? 'task' : 'worker';
         swoole_set_process_name("php-ps: {$type}#{$workerId}");
         if (false === $server->taskworker) {
-            $this->http = new Http(Env::get('APP_PATH'));
-            $this->http->httpStart($server, $workerId);
+            $this->http = new Http($server, $workerId, Env::get('APP_PATH'));
         }
     }
 
@@ -117,8 +118,24 @@ class Manager
      */
     protected function onTask(Server $server, Task $task)
     {
+        $result = null;
+        if (is_array($task->data)) {
+            if (SocketLog::class === $task->data['action']) {
+                $cli = new Client($task->data['host'], $task->data['port']);
+                $cli->setMethod('POST');
+                $cli->setHeaders([
+                    'Host' => $task->data['host'],
+                    'Content-Type' => 'application/json;charset=UTF-8',
+                    'Accept' => 'text/html,application/xhtml+xml,application/xml',
+                    'Accept-Encoding' => 'gzip',
+                ]);
+                $cli->set(['timeout' => 3, 'keep_alive' => true]);
+                $cli->post($task->data['address'], $task->data['message']);
+                $result = $cli->statusCode;
+            }
+        }
         //完成任务，结束并返回数据
-        $task->finish(true);
+        $task->finish($result);
     }
 
     /**
