@@ -18,32 +18,57 @@ use Throwable;
 class App extends \think\App
 {
     /**
+     * App 值重设
+     */
+    public function reset()
+    {
+        // 重置应用的开始时间和内存占用
+        $this->beginTime = microtime(true);
+        $this->beginMem  = memory_get_usage();
+        // 重置数据库查询次数
+        Db::$queryTimes = 0;
+        // 重置数据库执行次数
+        Db::$executeTimes = 0;
+    }
+
+    /**
+     * @return \think\Response
+     * @throws Throwable
+     */
+    public function runSwoole(): \think\Response
+    {
+        $this->reset();
+        try {
+            ob_start();
+            $resp = $this->run();
+            $content = $resp->getContent();
+            $resp->content(ob_get_contents() . $content);
+
+            // Trace调试注入
+            if ($this->env->get('app_trace', $this->config->get('app_trace'))) {
+                $this->debug->inject($resp, $content);
+            }
+        } catch (HttpException $e) {
+            $resp = $this->exception($e);
+        } catch (Exception $e) {
+            $resp = $this->exception($e);
+        } catch (Throwable $e) {
+            $resp = $this->exception($e);
+        }
+        return $resp;
+    }
+
+    /**
      * 处理Swoole请求
      * @param Request  $request
      * @param Response $response
-     * @return void
+     * @return \think\Response
      * @throws Throwable
      */
     public function swoole(Request $request, Response $response)
     {
         try {
-            // 重置应用的开始时间和内存占用
-            $this->beginTime = microtime(true);
-            $this->beginMem  = memory_get_usage();
-
-            // 重置数据库查询次数
-            Db::$queryTimes = 0;
-
-            // 重置数据库执行次数
-            Db::$executeTimes = 0;
-
-            // 销毁当前请求对象实例
-            $this->delete(\think\Request::class);
-            $this->delete(Cookie::class);
-            $this->delete(Session::class);
-
-            // 设置Cookie类Response
-            // $this->cookie->setResponse($response);
+            $this->reset();
 
             $header  = $request->header ?: [];
             $server  = $request->server ?: [];
@@ -79,81 +104,42 @@ class App extends \think\App
             $this->route->setRequest($this->request);
 
             // 重新加载全局中间件
-            if (is_file($this->appPath . 'middleware.php')) {
-                /** @noinspection PhpIncludeInspection */
-                $middleware = include $this->appPath . 'middleware.php';
-                if (is_array($middleware)) {
-                    $this->middleware->import($middleware);
-                }
-            }
+            $this->middleware->import((array) $this->make('middleware.global.file'));
 
             ob_start();
             $resp = $this->run();
             $resp->send();
             $content = ob_get_clean();
-            $status  = $resp->getCode();
+            $resp->content(ob_get_contents() . $content);
 
             // Trace调试注入
             if ($this->env->get('app_trace', $this->config->get('app_trace'))) {
                 $this->debug->inject($resp, $content);
             }
 
-            // 清除中间件数据
-            $this->middleware->clear();
-
-            // 发送状态码
-            $response->status($status);
-
-            // 发送Header
-            foreach ($resp->getHeader() as $key => $val) {
-                $response->header($key, $val);
-            }
-
-            // 发生Cookie
-            foreach ($this->cookie->getCookie() as $name => $val) {
-                list($value, $expire, $option) = $val;
-                 $response->cookie($name, $value, $expire, $option['path'], $option['domain'], $option['secure'] ? true : false, $option['httponly'] ? true : false);
-            }
-
-            if (false === empty($content)) {
-                $size = 524288; // 单次发送长度 512K
-                $chunk = ceil(strlen($content) / $size);
-                for ($i = 0; $i < $chunk; $i++) {
-                    $response->write(substr($content, $i * $size, $size));
-                }
-                $response->end();
-            } else {
-                $response->end('');
-            }
         } catch (HttpException $e) {
-            $this->exception($response, $e);
+            $resp = $this->exception($e);
         } catch (Exception $e) {
-            $this->exception($response, $e);
+            $resp = $this->exception($e);
         } catch (Throwable $e) {
-            $this->exception($response, $e);
+            $resp = $this->exception($e);
         }
+
+        return $resp;
     }
 
     /**
-     * @param Response   $response
      * @param Throwable $e
+     * @return \think\Response
      * @throws Throwable
      */
-    protected function exception(Response $response, Throwable $e)
+    protected function exception(Throwable $e)
     {
         if ($e instanceof Exception) {
             $handler = Error::getExceptionHandler();
             $handler->report($e);
 
-            $resp    = $handler->render($e);
-            $content = $resp->getContent();
-            $code    = $resp->getCode();
-
-            $response->status($code);
-            $response->end($content);
-        } else {
-            $response->status(500);
-            $response->end($e->getMessage());
+            return $handler->render($e);
         }
 
         throw $e;
