@@ -82,13 +82,14 @@ class App extends \think\App
             $resp = $this->run();
             $resp->send();
             $content = ob_get_clean();
-            $resp->content(ob_get_contents() . $content);
+            $content = ob_get_contents() . $content;
 
             // Trace调试注入
             if ($this->env->get('app_trace', $this->config->get('app_trace'))) {
                 $this->debug->inject($resp, $content);
             }
 
+            $resp->content($content);
         } catch (HttpException $e) {
             $resp = $this->exception($e);
         } catch (Exception $e) {

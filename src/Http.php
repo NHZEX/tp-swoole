@@ -81,18 +81,31 @@ class Http
     {
         $this->app->log->debug("workerId: {$this->workerId}, coroutineId: " . Coroutine::getCid());
 
+        // 请求清理
+        $this->clear($this->app);
+
         // 执行应用并响应
         $resp = $this->app->runSwoole($request);
 
         // 发送请求
         $this->sendResponse($this->app, $resp, $response);
+    }
 
+    /**
+     * @param App $app
+     */
+    protected function clear(App $app)
+    {
         // 清理对象实例
-        $this->app->delete(\think\Request::class);
-        $this->app->delete(Cookie::class);
-        $this->app->delete(Session::class);
+        $instances = $app->config->get('swoole.instances', []);
+        $instances[] = \think\Request::class;
+        $instances[] = Cookie::class;
+        $instances[] = Session::class;
+        foreach ($instances as $instance) {
+            $app->delete($instance);
+        }
         // 清除中间件数据
-        $this->app->middleware->clear();
+        $app->middleware->clear();
     }
 
     /**
