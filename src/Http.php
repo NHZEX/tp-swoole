@@ -74,12 +74,8 @@ class Http
     public function httpRequest(Request $request, Response $response)
     {
         $this->app->log->debug("workerId: {$this->workerId}, coroutineId: " . Coroutine::getCid());
-        $this->app->log->debug("ClientInfo");
-        $this->app->log->debug($this->server->getClientInfo($request->fd));
-        self::debugContainer($this->app, $this->workerId);
         // 执行应用并响应
         $this->app->swoole($request, $response);
-        self::debugContainer($this->app, $this->workerId);
     }
 
     public static function debugContainer(Container $container, $workerId)

@@ -39,10 +39,11 @@ class App extends \think\App
 
             // 销毁当前请求对象实例
             $this->delete(\think\Request::class);
-            $this->delete(\think\Cookie::class);
+            $this->delete(Cookie::class);
+            $this->delete(Session::class);
 
             // 设置Cookie类Response
-            $this->cookie->setResponse($response);
+            // $this->cookie->setResponse($response);
 
             $header  = $request->header ?: [];
             $server  = $request->server ?: [];
@@ -59,8 +60,6 @@ class App extends \think\App
             if (isset($req->get[$this->config->get('var_pathinfo')])) {
                 $server['path_info'] = $request->get[$this->config->get('var_pathinfo')];
             }
-
-            $_SERVER = array_change_key_case($server, CASE_UPPER);
 
             // 重新实例化请求对象 处理swoole请求数据
             $queryStr = !empty($request->server['query_string']) ? ('&' . $request->server['query_string']) : '';
@@ -108,6 +107,12 @@ class App extends \think\App
             // 发送Header
             foreach ($resp->getHeader() as $key => $val) {
                 $response->header($key, $val);
+            }
+
+            // 发生Cookie
+            foreach ($this->cookie->getCookie() as $name => $val) {
+                list($value, $expire, $option) = $val;
+                 $response->cookie($name, $value, $expire, $option['path'], $option['domain'], $option['secure'] ? true : false, $option['httponly'] ? true : false);
             }
 
             if (false === empty($content)) {

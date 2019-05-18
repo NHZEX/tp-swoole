@@ -10,35 +10,47 @@
 // +----------------------------------------------------------------------
 namespace HZEX\TpSwoole\Tp;
 
-use Swoole\Http\Response;
+use ReflectionClass;
+use ReflectionException;
+use think\Container;
 use think\Cookie as BaseCookie;
+use think\Request;
 
 /**
  * Swoole Cookie类
  */
 class Cookie extends BaseCookie
 {
-    /** @var Response */
-    protected $response;
+    /** @var array */
+    protected $cookie = [];
+
+    /** @var Request */
+    protected $requestCookie = [];
 
     /**
      * Cookie初始化
      * @access public
-     * @param  array $config
+     * @param array $config
      * @return void
+     * @throws ReflectionException
      */
     public function init(array $config = [])
     {
         $this->config = array_merge($this->config, array_change_key_case($config));
+        $request = Container::get('request');
+        $ref = new ReflectionClass($request);
+        $val = $ref->getProperty('cookie');
+        $val->setAccessible(true);
+        $this->requestCookie = $val->getValue($request) ?: [];
+
     }
 
     /**
-     * 设置Swoole响应对象
-     * @param Response $response
+     * @return array
      */
-    public function setResponse(Response $response)
+    public function getCookie()
     {
-        $this->response = $response;
+        return $this->cookie;
     }
 
     /**
@@ -53,14 +65,95 @@ class Cookie extends BaseCookie
      */
     protected function setCookie($name, $value, $expire, $option = [])
     {
-        $this->response->cookie(
-            $name,
-            $value,
-            $expire,
-            $option['path'],
-            $option['domain'],
-            $option['secure'],
-            $option['httponly']
-        );
+        $this->cookie[$name] = [$value, $expire, $option,];
+    }
+
+    /**
+     * Cookie 设置、获取、删除
+     *
+     * @access public
+     * @param  string $name  cookie名称
+     * @param  mixed  $value cookie值
+     * @param  mixed  $option 可选参数 可能会是 null|integer|string
+     * @return void
+     */
+    public function set($name, $value = '', $option = null)
+    {
+        // 参数设置(会覆盖黙认设置)
+        if (!is_null($option)) {
+            if (is_numeric($option)) {
+                $option = ['expire' => $option];
+            } elseif (is_string($option)) {
+                parse_str($option, $option);
+            }
+
+            $config = array_merge($this->config, array_change_key_case($option));
+        } else {
+            $config = $this->config;
+        }
+
+        // 设置cookie
+        if (is_array($value)) {
+            array_walk_recursive($value, [$this, 'jsonFormatProtect'], 'encode');
+            $value = 'think:' . json_encode($value);
+        }
+
+        $expire = !empty($config['expire']) ? time() + intval($config['expire']) : 0;
+
+        $this->setCookie($name, $value, $expire, $config);
+    }
+
+    /**
+     * 判断Cookie数据
+     * @access public
+     * @param  string        $name cookie名称
+     * @param  string|null   $prefix cookie前缀
+     * @return bool
+     */
+    public function has($name, $prefix = null)
+    {
+        return isset($this->requestCookie[$name]);
+    }
+
+    /**
+     * Cookie获取
+     * @access public
+     * @param  string        $name cookie名称 留空获取全部
+     * @param  string|null   $prefix cookie前缀
+     * @return mixed
+     */
+    public function get($name = '', $prefix = null)
+    {
+        return $this->requestCookie[$name] ?? null;
+    }
+
+    /**
+     * Cookie删除
+     * @access public
+     * @param  string        $name cookie名称
+     * @param  string|null   $prefix cookie前缀
+     * @return void
+     */
+    public function delete($name, $prefix = null)
+    {
+        $this->setCookie($name, '', time() - 3600, $this->config);
+    }
+
+    /**
+     * Cookie清空
+     * @access public
+     * @param  string|null $prefix cookie前缀
+     * @return void
+     */
+    public function clear($prefix = null)
+    {
+        $cookie = $this->get();
+        if (is_array($cookie)) {
+            foreach ($this->get() as $key => $val) {
+                $this->setcookie($key, '', time() - 3600, $this->config);
+            }
+        }
+
+        return;
     }
 }
