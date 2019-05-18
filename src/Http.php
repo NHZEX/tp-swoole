@@ -24,41 +24,45 @@ class Http
     protected $server;
     /** @var int */
     protected $workerId;
-    /** @var string */
-    protected $appPath;
 
-    public function __construct(Server $server, int $workerId, string $path)
+    public function __construct(Server $server, int $workerId)
     {
         $this->server = $server;
         $this->workerId = $workerId;
-        $this->appPath = $path;
 
-        $this->start();
+        $this->initApp();
     }
 
-    /**
-     * 启动
-     */
-    public function start()
+    private function initApp()
     {
         // 应用实例化
-        $this->app = new App($this->appPath);
+        $this->app = new App(App::getInstance()->getAppPath());
         // 重新绑定日志类
         $this->app->bindTo('log', Log::class);
-
+        // 绑定swoole实例
         $this->app->bindTo('swoole.server', $this->server);
         $this->app->bindTo('swoole.worker.id', function () {
             return $this->workerId;
         });
-
+        // 绑定中间件文件
+        $this->app->bindTo('middleware.global.file', function () {
+            if (is_file($this->app->getAppPath() . 'middleware.php')) {
+                /** @noinspection PhpIncludeInspection */
+                $middleware = include $this->app->getAppPath() . 'middleware.php';
+                if (is_array($middleware)) {
+                    return $middleware;
+                }
+            }
+            return [];
+        });
+        // 绑定门面
         Facade::bind([
             CookieFacade::class => Cookie::class,
             SessionFacade::class => Session::class,
         ]);
-
         // 应用初始化
         $this->app->initialize();
-
+        // 覆盖绑定
         $this->app->bindTo([
             'log' => Log::class,
             'cookie' => Cookie::class,

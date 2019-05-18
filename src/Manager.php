@@ -108,7 +108,7 @@ class Manager
         $type = $server->taskworker ? 'task' : 'worker';
         swoole_set_process_name("php-ps: {$type}#{$workerId}");
         if (false === $server->taskworker) {
-            $this->http = new Http($server, $workerId, Env::get('APP_PATH'));
+            $this->http = new Http($server, $workerId);
         }
     }
 
