@@ -6,6 +6,7 @@ use HZEX\TpSwoole\Tp\App;
 use HZEX\TpSwoole\Tp\Cookie;
 use HZEX\TpSwoole\Tp\Log;
 use HZEX\TpSwoole\Tp\Session;
+use Swoole\Coroutine;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\WebSocket\Server;
@@ -72,8 +73,26 @@ class Http
      */
     public function httpRequest(Request $request, Response $response)
     {
+        $this->app->log->debug("workerId: {$this->workerId}, coroutineId: " . Coroutine::getCid());
+        $this->app->log->debug("ClientInfo");
+        $this->app->log->debug($this->server->getClientInfo($request->fd));
+        self::debugContainer($this->app, $this->workerId);
         // 执行应用并响应
         $this->app->swoole($request, $response);
+        self::debugContainer($this->app, $this->workerId);
+    }
+
+    public static function debugContainer(Container $container, $workerId)
+    {
+        $debug = array_map(function ($val) use ($workerId) {
+            if (is_object($val)) {
+                return get_class($val) . ' = ' . hash('crc32', spl_object_hash($val) . $workerId);
+            } else {
+                return $val;
+            }
+        }, $container->all());
+        ksort($debug, SORT_STRING); // SORT_FLAG_CASE
+        $container->log->debug($debug);
     }
 
     public function appShutdown()

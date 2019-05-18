@@ -6,6 +6,7 @@ use Closure;
 use Exception;
 use HZEX\TpSwoole\Process\Child\FileMonitor;
 use HZEX\TpSwoole\Tp\Log\Driver\SocketLog;
+use Swoole\Coroutine;
 use Swoole\Coroutine\Http\Client;
 use Swoole\Http\Request;
 use Swoole\Http\Response;

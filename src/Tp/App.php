@@ -27,8 +27,6 @@ class App extends \think\App
     public function swoole(Request $request, Response $response)
     {
         try {
-            ob_start();
-
             // 重置应用的开始时间和内存占用
             $this->beginTime = microtime(true);
             $this->beginMem  = memory_get_usage();
@@ -40,28 +38,26 @@ class App extends \think\App
             Db::$executeTimes = 0;
 
             // 销毁当前请求对象实例
-            $this->delete('think\Request');
+            $this->delete(\think\Request::class);
+            $this->delete(\think\Cookie::class);
 
             // 设置Cookie类Response
             $this->cookie->setResponse($response);
 
-            $_COOKIE = $request->cookie ?: [];
-            $_GET    = $request->get ?: [];
-            $_POST   = $request->post ?: [];
-            $_FILES  = $request->files ?: [];
             $header  = $request->header ?: [];
             $server  = $request->server ?: [];
 
             if (isset($header['x-requested-with'])) {
                 $server['HTTP_X_REQUESTED_WITH'] = $header['x-requested-with'];
             }
-
             if (isset($header['referer'])) {
                 $server['http_referer'] = $header['referer'];
             }
-
-            if (isset($_GET[$this->config->get('var_pathinfo')])) {
-                $server['path_info'] = $_GET[$this->config->get('var_pathinfo')];
+            if (isset($header['host'])) {
+                $server['http_host'] = $header['host'];
+            }
+            if (isset($req->get[$this->config->get('var_pathinfo')])) {
+                $server['path_info'] = $request->get[$this->config->get('var_pathinfo')];
             }
 
             $_SERVER = array_change_key_case($server, CASE_UPPER);
@@ -69,12 +65,12 @@ class App extends \think\App
             // 重新实例化请求对象 处理swoole请求数据
             $queryStr = !empty($request->server['query_string']) ? ('&' . $request->server['query_string']) : '';
             $this->request->withHeader($header)
-                ->withServer($_SERVER)
-                ->withGet($_GET)
-                ->withPost($_POST)
-                ->withCookie($_COOKIE)
+                ->withServer($server)
+                ->withGet($request->get ?: [])
+                ->withPost($request->post ?: [])
+                ->withCookie($request->cookie ?: [])
                 ->withInput($request->rawContent())
-                ->withFiles($_FILES)
+                ->withFiles($request->files ?: [])
                 ->setBaseUrl($request->server['request_uri'])
                 ->setUrl($request->server['request_uri'] . $queryStr)
                 ->setHost($request->header['host'])
@@ -92,9 +88,9 @@ class App extends \think\App
                 }
             }
 
+            ob_start();
             $resp = $this->run();
             $resp->send();
-
             $content = ob_get_clean();
             $status  = $resp->getCode();
 
