@@ -72,43 +72,35 @@ class Http
     }
 
     /**
-     * @param Request $req
-     * @param App     $app
-     * @return \think\Request
+     * 处理请求
+     * @param Request  $request
+     * @param Response $response
+     * @throws Throwable
      */
-    protected function prepareRequest(Request $req, App $app)
+    public function httpRequest(Request $request, Response $response)
     {
-        $header = $req->header ?: [];
-        $server = $req->server ?: [];
+        $this->app->log->debug("workerId: {$this->workerId}, coroutineId: " . Coroutine::getCid());
 
-        if (isset($header['x-requested-with'])) {
-            $server['HTTP_X_REQUESTED_WITH'] = $header['x-requested-with'];
-        }
-        if (isset($header['referer'])) {
-            $server['http_referer'] = $header['referer'];
-        }
-        if (isset($header['host'])) {
-            $server['http_host'] = $header['host'];
-        }
-        if (isset($req->get[$app->config->get('var_pathinfo')])) {
-            $server['path_info'] = $req->get[$app->config->get('var_pathinfo')];
-        }
+        // 执行应用并响应
+        $resp = $this->app->runSwoole($request);
 
-        /** @var \think\Request $request */
-        $request = $this->app->make('request', [], true);
+        // 发送请求
+        $this->sendResponse($this->app, $resp, $response);
 
-        return $request->withHeader($header)
-            ->withServer($server)
-            ->withGet($req->get ?: [])
-            ->withPost($req->post ?: [])
-            ->withCookie($req->cookie ?: [])
-            ->withInput($req->rawContent())
-            ->withFiles($req->files ?: [])
-            ->setBaseUrl($req->server['request_uri'])
-            ->setUrl($req->server['request_uri'] . (!empty($req->server['query_string']) ? '&' . $req->server['query_string'] : ''))
-            ->setPathinfo(ltrim($req->server['path_info'], '/'));
+        // 清理对象实例
+        $this->app->delete(\think\Request::class);
+        $this->app->delete(Cookie::class);
+        $this->app->delete(Session::class);
+        // 清除中间件数据
+        $this->app->middleware->clear();
     }
 
+    /**
+     * 发送数据
+     * @param App             $app
+     * @param \think\Response $thinkResponse
+     * @param Response        $swooleResponse
+     */
     protected function sendResponse(App $app, \think\Response $thinkResponse, Response $swooleResponse)
     {
         // 发送Header
@@ -133,33 +125,6 @@ class Http
         }
 
         $swooleResponse->end();
-    }
-
-    /**
-     * @param Request  $request
-     * @param Response $response
-     * @throws Throwable
-     */
-    public function httpRequest(Request $request, Response $response)
-    {
-        $this->app->log->debug("workerId: {$this->workerId}, coroutineId: " . Coroutine::getCid());
-
-        // 准备请求对象
-        //$this->prepareRequest($request, $this->app);
-
-        // 执行应用并响应
-        $resp = $this->app->swoole($request, $response);
-        //$resp = $this->app->runSwoole();
-
-        // 发送请求
-        $this->sendResponse($this->app, $resp, $response);
-
-        // 清理对象实例
-        $this->app->delete(\think\Request::class);
-        $this->app->delete(Cookie::class);
-        $this->app->delete(Session::class);
-        // 清除中间件数据
-        $this->app->middleware->clear();
     }
 
     public static function debugContainer(Container $container, $workerId)

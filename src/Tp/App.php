@@ -4,10 +4,10 @@ namespace HZEX\TpSwoole\Tp;
 
 use Exception;
 use Swoole\Http\Request;
-use Swoole\Http\Response;
 use think\Db;
 use think\Error;
 use think\exception\HttpException;
+use think\Response;
 use Throwable;
 
 /**
@@ -32,40 +32,12 @@ class App extends \think\App
     }
 
     /**
-     * @return \think\Response
-     * @throws Throwable
-     */
-    public function runSwoole(): \think\Response
-    {
-        $this->reset();
-        try {
-            ob_start();
-            $resp = $this->run();
-            $content = $resp->getContent();
-            $resp->content(ob_get_contents() . $content);
-
-            // Trace调试注入
-            if ($this->env->get('app_trace', $this->config->get('app_trace'))) {
-                $this->debug->inject($resp, $content);
-            }
-        } catch (HttpException $e) {
-            $resp = $this->exception($e);
-        } catch (Exception $e) {
-            $resp = $this->exception($e);
-        } catch (Throwable $e) {
-            $resp = $this->exception($e);
-        }
-        return $resp;
-    }
-
-    /**
      * 处理Swoole请求
      * @param Request  $request
-     * @param Response $response
-     * @return \think\Response
+     * @return Response
      * @throws Throwable
      */
-    public function swoole(Request $request, Response $response)
+    public function runSwoole(Request $request)
     {
         try {
             $this->reset();
@@ -130,7 +102,7 @@ class App extends \think\App
 
     /**
      * @param Throwable $e
-     * @return \think\Response
+     * @return Response
      * @throws Throwable
      */
     protected function exception(Throwable $e)
