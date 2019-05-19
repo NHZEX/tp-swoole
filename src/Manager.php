@@ -4,27 +4,34 @@ namespace HZEX\TpSwoole;
 
 use Closure;
 use Exception;
+use HZEX\TpSwoole\Concerns\InteractsWithWebsocket;
 use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use HZEX\TpSwoole\Process\Child\FileMonitor;
+use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
+use HZEX\TpSwoole\Swoole\SwooleServerInterface;
+use HZEX\TpSwoole\Swoole\SwooleWebSocketInterface;
 use HZEX\TpSwoole\Tp\Log\Driver\SocketLog;
 use Swoole\Coroutine;
 use Swoole\Coroutine\Http\Client;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Runtime;
+use Swoole\Server;
 use Swoole\Server\Task;
 use Swoole\WebSocket\Frame;
 use Swoole\Http\Server as HttpServer;
-use Swoole\WebSocket\Server as WebSocketServer;
-use think\App;
+use Swoole\WebSocket\Server as WsServer;
+use think\Container;
 use Throwable;
 
-class Manager
+class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 {
-    /** @var App */
-    private $app;
+    use InteractsWithWebsocket;
 
-    /** @var HttpServer|WebSocketServer */
+    /** @var Container */
+    private $container;
+
+    /** @var HttpServer|WsServer */
     private $swoole;
 
     /** @var Http */
@@ -33,24 +40,40 @@ class Manager
     /** @var int */
     private $pid;
 
+    /** @var */
+    private $workerId;
+
     /** @var array 支持的响应事件 */
-    protected $event = [
-        'Start', 'Shutdown',
-        'WorkerStart', 'WorkerStop', 'WorkerExit', 'WorkerError',
-        'ManagerStart', 'ManagerStop',
-        'Connect', 'Receive', 'Packet', 'Close',
-        'Task', 'Finish', 'PipeMessage',
-        'Request', 'Open', 'Message', 'HandShake',
+    protected $events = [
+        'Start', 'Shutdown', // Server
+        'ManagerStart', 'ManagerStop', // Manager
+        'WorkerStart', 'WorkerStop', 'WorkerExit', 'WorkerError', // Worker
+        'PipeMessage', // Message
+        'Task', 'Finish', // Task
+        'Connect', 'Receive', 'Close', // Tcp
+        'Packet', // Udp
+        'Request', // Http
     ];
 
-    public function __construct(App $app)
+    public function __construct()
     {
-        $this->app = $app;
+        $this->container = Container::getInstance();
 
-        $this->swoole = $this->app->make('swoole.server');
+        $this->swoole = $this->container->make('swoole.server');
 
         $this->swoole->addProcess((new FileMonitor($this))->makeProcess());
 
+        $this->initialize();
+    }
+
+    protected function initialize()
+    {
+        $this->prepareWebsocket();
+        $this->registerServerEvent();
+    }
+
+    protected function registerServerEvent()
+    {
         $this->swoole->on('Start', Closure::fromCallable([$this, 'onStart']));
         $this->swoole->on('ManagerStart', Closure::fromCallable([$this, 'onManagerStart']));
         $this->swoole->on('WorkerStart', Closure::fromCallable([$this, 'onWorkerStart']));
@@ -64,11 +87,19 @@ class Manager
         $this->swoole->on('Open', Closure::fromCallable([$this, 'onOpen']));
         $this->swoole->on('Message', Closure::fromCallable([$this, 'onMessage']));
         $this->swoole->on('Close', Closure::fromCallable([$this, 'onClose']));
+
+//        foreach ($this->events as $event) {
+//            $callback = method_exists($this, $listener) ? [$this, $listener] : function () use ($event) {
+//                $this->container->event->trigger("swoole.$event", func_get_args());
+//            };
+//
+//            $this->swoole->on($event, $callback);
+//        }
     }
 
     /**
      * 获取SwooleServer实例
-     * @return WebSocketServer
+     * @return WsServer
      */
     public function getSwoole()
     {
@@ -93,46 +124,103 @@ class Manager
 
     /**
      * 主进程启动
-     * @param WebSocketServer $server
+     * @param HttpServer|Server|WsServer $server
      */
-    protected function onStart(WebSocketServer $server)
+    public function onStart($server): void
     {
         swoole_set_process_name('php-ps: master');
         $this->pid = $server->master_pid;
     }
 
     /**
-     * 管理进程启动
-     * @param WebSocketServer $server
+     * 主进程结束
+     * @param HttpServer|WsServer $server
      */
-    protected function onManagerStart(WebSocketServer $server)
+    public function onShutdown($server): void
+    {
+        // TODO: Implement onShutdown() method.
+    }
+
+    /**
+     * 管理进程启动
+     * @param HttpServer|Server|WsServer $server
+     */
+    public function onManagerStart($server): void
     {
         swoole_set_process_name('php-ps: manager');
     }
 
     /**
-     * 工作进程启动（Worker/Task）
-     * @param WebSocketServer $server
-     * @param int             $workerId
+     * 管理进程结束
+     * @param HttpServer|WsServer $server
      */
-    protected function onWorkerStart(WebSocketServer $server, int $workerId)
+    public function onManagerStop($server): void
+    {
+        // TODO: Implement onManagerStop() method.
+    }
+
+    /**
+     * 工作进程启动（Worker/Task）
+     * @param HttpServer|Server|WsServer $server
+     * @param int                        $workerId
+     */
+    public function onWorkerStart($server, int $workerId): void
     {
         $type = $server->taskworker ? 'task' : 'worker';
         swoole_set_process_name("php-ps: {$type}#{$workerId}");
         if (false === $server->taskworker) {
-            $this->http = new Http($server, $workerId);
+            $this->http = new Http($workerId);
+        }
+        // 设置当前工人Id
+        $this->workerId = $workerId;
+    }
+
+    /**
+     * 工作进程终止（Worker/Task）
+     * @param     $server
+     * @param int $workerId
+     */
+    public function onWorkerStop($server, int $workerId): void
+    {
+        // TODO: Implement onWorkerStop() method.
+    }
+
+    /**
+     * 工作进程异常（Worker/Task）
+     * @param HttpServer|Server|WsServer $server
+     * @param int                        $workerId
+     * @param int                        $workerPid
+     * @param int                        $exitCode
+     * @param int                        $signal
+     */
+    public function onWorkerError($server, int $workerId, int $workerPid, int $exitCode, int $signal): void
+    {
+        echo "WorkerError: $workerId, pid: $workerPid, execCode: $exitCode, signal: $signal\n";
+        if ($this->http instanceof Http) {
+            $this->http->appShutdown();
         }
     }
 
     /**
+     * 工作进程收到消息
+     * @param HttpServer|WsServer $server
+     * @param int                 $srcWorkerId
+     * @param mixed               $message
+     */
+    public function onPipeMessage($server, int $srcWorkerId, $message): void
+    {
+        // TODO: Implement onPipeMessage() method.
+    }
+
+    /**
      * 任务处理回调
-     * @param WebSocketServer $server
-     * @param int             $task_id
-     * @param int             $src_worker_id
+     * @param WsServer $server
+     * @param int      $task_id
+     * @param int      $src_worker_id
      * @param        $data
      * @return null
      */
-    protected function onTask(WebSocketServer $server, int $task_id, int $src_worker_id, $data)
+    protected function onTask(WsServer $server, int $task_id, int $src_worker_id, $data)
     {
         // $tasl = new Task();
         $result = null;
@@ -163,28 +251,12 @@ class Manager
 
     /**
      * 任务完成响应
-     * @param WebSocketServer $server
-     * @param int             $taskId
-     * @param string          $data
+     * @param HttpServer|WsServer $server
+     * @param int      $taskId
+     * @param string   $data
      */
-    protected function onFinish(WebSocketServer $server, int $taskId, string $data)
+    protected function onFinish($server, int $taskId, string $data)
     {
-    }
-
-    /**
-     * 工作进程异常（Worker/Task）
-     * @param WebSocketServer $server
-     * @param int             $workerId
-     * @param int             $workerPid
-     * @param int             $exitCode
-     * @param int             $signal
-     */
-    protected function onWorkerError(WebSocketServer $server, int $workerId, int $workerPid, int $exitCode, int $signal)
-    {
-        echo "WorkerError: $workerId, pid: $workerPid, execCode: $exitCode, signal: $signal\n";
-        if ($this->http instanceof Http) {
-            $this->http->appShutdown();
-        }
     }
 
     /**
@@ -193,38 +265,21 @@ class Manager
      * @param Response $response
      * @throws Throwable
      */
-    protected function onRequest(Request $request, Response $response)
+    public function onRequest(Request $request, Response $response): void
     {
-        //$response->end("<h1>Hello Swoole. #" . rand(1000, 9999) . "</h1>");
         $this->http->httpRequest($request, $response);
         $this->http->appShutdown();
     }
 
     /**
-     * 连接建立回调（WebSocket）
-     * @param WebSocketServer $server
-     * @param Request         $request
-     */
-    protected function onOpen(WebSocketServer $server, Request $request)
-    {
-    }
-
-    /**
-     * 消息到达回调（WebSocket）
-     * @param WebSocketServer $server
-     * @param                 $frame
-     * @throws Exception
-     */
-    protected function onMessage(WebSocketServer $server, Frame $frame)
-    {
-    }
-
-    /**
-     * 连接关闭回调（WebSocket）
-     * @param WebSocketServer $server
+     * 连接关闭回调
+     * @param HttpServer|WsServer $server
      * @param                 $fd
      */
-    protected function onClose(WebSocketServer $server, $fd)
+    protected function onClose($server, $fd)
     {
+        if ($this->isServerWebsocket) {
+            $this->onWsClose($server, $fd);
+        }
     }
 }

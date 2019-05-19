@@ -9,9 +9,7 @@ use HZEX\TpSwoole\Tp\Session;
 use Swoole\Coroutine;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
-use Swoole\WebSocket\Server;
 use think\Container;
-use think\Exception;
 use think\Facade;
 use think\facade\Cookie as CookieFacade;
 use think\facade\Session as SessionFacade;
@@ -21,14 +19,11 @@ class Http
 {
     /** @var App */
     protected $app;
-    /** @var Server */
-    protected $server;
     /** @var int */
     protected $workerId;
 
-    public function __construct(Server $server, int $workerId)
+    public function __construct(int $workerId)
     {
-        $this->server = $server;
         $this->workerId = $workerId;
 
         $this->initApp();
@@ -40,11 +35,7 @@ class Http
         $this->app = new App(App::getInstance()->getAppPath());
         // 重新绑定日志类
         $this->app->bindTo('log', Log::class);
-        // 绑定swoole实例
-        $this->app->bindTo('swoole.server', $this->server);
-        $this->app->bindTo('swoole.worker.id', function () {
-            return $this->workerId;
-        });
+
         // 绑定中间件文件
         $this->app->bindTo('middleware.global.file', function () {
             if (is_file($this->app->getAppPath() . 'middleware.php')) {
@@ -69,6 +60,14 @@ class Http
             'cookie' => Cookie::class,
             'session' => Session::class,
         ]);
+    }
+
+    /**
+     * @return int
+     */
+    public function getWorkerId()
+    {
+        return $this->workerId;
     }
 
     /**
