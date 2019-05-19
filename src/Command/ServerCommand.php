@@ -13,13 +13,13 @@ namespace HZEX\TpSwoole\Command;
 
 use HZEX\TpSwoole\Manager;
 use Swoole\Process;
+use think\App;
 use think\console\Command;
 use think\console\Input;
 use think\console\input\Argument;
 use think\console\input\Option;
 use think\console\Output;
 use think\facade\Config;
-use think\facade\Env;
 
 /**
  * Swoole 命令行，支持操作：start|stop|restart|reload
@@ -27,24 +27,41 @@ use think\facade\Env;
  */
 class ServerCommand extends Command
 {
-    protected $host = '0.0.0.0';
-    protected $port = 9502;
-    protected $mode = SWOOLE_PROCESS;
-    protected $sockType = SWOOLE_SOCK_TCP;
-
-    protected $option = [];
+    protected $config = [];
 
     public function configure()
     {
         $this->setName('server')
             ->addArgument('action', Argument::OPTIONAL, "conf|start|stop|restart|reload", 'start')
-            ->addOption('host', 'H', Option::VALUE_OPTIONAL, 'the host of swoole server.', null)
-            ->addOption('port', 'p', Option::VALUE_OPTIONAL, 'the port of swoole server.', null)
             ->addOption('daemon', 'd', Option::VALUE_NONE, 'Run the swoole server in daemon mode.')
             ->setDescription('Swoole Server for ThinkPHP');
 
         // 不执行事件循环
         swoole_event_exit();
+    }
+
+    public function execute(Input $input, Output $output)
+    {
+        $action = $input->getArgument('action');
+
+        if (false === $this->environment()) {
+            $this->output->error("环境不符合要求");
+            return 1;
+        }
+        $this->init();
+
+        if (in_array($action, ['conf', 'start', 'stop', 'reload', 'restart'])) {
+            $this->$action();
+            if (false === in_array($action, ['start', 'restart'])) {
+                // 不执行事件循环
+                swoole_event_exit();
+            }
+        } else {
+            $output->writeln(
+                "<error>Invalid argument action:{$action}, Expected conf|start|stop|restart|reload .</error>"
+            );
+        }
+        return 0;
     }
 
     protected function environment()
@@ -80,62 +97,22 @@ class ServerCommand extends Command
     protected function init()
     {
         $this->output->info("--------------------------- INIT --------------------------------");
-        $config = Config::pull('swoole');
-
-        // 获取 host 设置
-        if ($this->input->hasOption('host')) {
-            $this->host = $this->input->getOption('host');
-        } else {
-            $this->host = isset($config['host']) ? $config['host'] : '127.0.0.1';
-        }
-        // 获取 port 设置
-
-        if ($this->input->hasOption('port')) {
-            $this->port = (int) $this->input->getOption('port');
-        } else {
-            $this->port = (int) (isset($config['port']) ? $config['port'] : 9501);
-        }
-
-        // 加载 swoole 选项
-        $this->option = $config['option'];
-
-        // 设置静态资源目录
-        if (false === isset($this->option['document_root'])) {
-            $this->option['document_root'] = Env::get('root_path') . 'public';
-        }
+        $this->config = Config::pull('swoole');
 
         // 开启守护进程模式
         if ($this->input->hasOption('daemon')) {
-            $this->option['daemonize'] = true;
+            $this->config['server']['daemonize'] = true;
         }
     }
 
     /**
+     * Get Pid file path.
+     *
      * @return string
      */
-    protected function getHost()
+    protected function getPidPath()
     {
-        if ($this->input->hasOption('host')) {
-            $host = $this->input->getOption('host');
-        } else {
-            $host = !empty($this->option['host']) ? $this->option['host'] : '0.0.0.0';
-        }
-
-        return $host;
-    }
-
-    /**
-     * @return int
-     */
-    protected function getPort()
-    {
-        if ($this->input->hasOption('port')) {
-            $port = $this->input->getOption('port');
-        } else {
-            $port = !empty($this->option['port']) ? $this->option['port'] : 9501;
-        }
-
-        return (int) $port;
+        return $this->config['server']['options']['pid_file'];
     }
 
     /**
@@ -145,39 +122,15 @@ class ServerCommand extends Command
      */
     protected function getMasterPid()
     {
-        $pidFile = $this->option['pid_file'];
+        $pidFile = $this->getPidPath();
 
-        if (is_file($pidFile)) {
+        if (file_exists($pidFile)) {
             $masterPid = (int) file_get_contents($pidFile);
         } else {
             $masterPid = 0;
         }
 
         return $masterPid;
-    }
-
-    public function execute(Input $input, Output $output)
-    {
-        $action = $input->getArgument('action');
-
-        if (false === $this->environment()) {
-            $this->output->error("环境不符合要求");
-            return 1;
-        }
-        $this->init();
-
-        if (in_array($action, ['conf', 'start', 'stop', 'reload', 'restart'])) {
-            $this->$action();
-            if (false === in_array($action, ['start', 'restart'])) {
-                // 不执行事件循环
-                swoole_event_exit();
-            }
-        } else {
-            $output->writeln(
-                "<error>Invalid argument action:{$action}, Expected conf|start|stop|restart|reload .</error>"
-            );
-        }
-        return 0;
     }
 
     /**
@@ -187,9 +140,9 @@ class ServerCommand extends Command
      */
     protected function removePid()
     {
-        $masterPid = $this->option['pid_file'];
+        $masterPid = $this->getPidPath();
 
-        if (is_file($masterPid)) {
+        if (file_exists($masterPid)) {
             unlink($masterPid);
         }
     }
@@ -233,10 +186,11 @@ class ServerCommand extends Command
 
         $this->output->writeln('Starting swoole server...');
 
-        $host = $this->getHost();
-        $port = $this->getPort();
+        $host = $this->config['server']['host'];
+        $port = $this->config['server']['port'];
 
-        $server = new Manager($host, $port, $this->mode, $this->sockType, $this->option);
+        /** @var Manager $server */
+        $server = App::getInstance()->make(Manager::class);
 
         $this->output->writeln("Swoole Http && Websocket started: <{$host}:{$port}>");
         $this->output->writeln('You can exit with <info>`CTRL-C`</info>');

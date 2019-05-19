@@ -4,6 +4,7 @@ namespace HZEX\TpSwoole;
 
 use Closure;
 use Exception;
+use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use HZEX\TpSwoole\Process\Child\FileMonitor;
 use HZEX\TpSwoole\Tp\Log\Driver\SocketLog;
 use Swoole\Coroutine;
@@ -13,13 +14,17 @@ use Swoole\Http\Response;
 use Swoole\Runtime;
 use Swoole\Server\Task;
 use Swoole\WebSocket\Frame;
-use Swoole\WebSocket\Server;
-use think\facade\Env;
+use Swoole\Http\Server as HttpServer;
+use Swoole\WebSocket\Server as WebSocketServer;
+use think\App;
 use Throwable;
 
 class Manager
 {
-    /** @var Manager */
+    /** @var App */
+    private $app;
+
+    /** @var HttpServer|WebSocketServer */
     private $swoole;
 
     /** @var Http */
@@ -38,12 +43,11 @@ class Manager
         'Request', 'Open', 'Message', 'HandShake',
     ];
 
-    public function __construct(string $host, int $port, int $mode, int $sockType, array $option)
+    public function __construct(App $app)
     {
-        // Runtime::enableCoroutine(true);
+        $this->app = $app;
 
-        $this->swoole = new Server($host, $port, $mode, $sockType);
-        $this->swoole->set($option);
+        $this->swoole = $this->app->make('swoole.server');
 
         $this->swoole->addProcess((new FileMonitor($this))->makeProcess());
 
@@ -64,7 +68,7 @@ class Manager
 
     /**
      * 获取SwooleServer实例
-     * @return Server
+     * @return WebSocketServer
      */
     public function getSwoole()
     {
@@ -80,10 +84,18 @@ class Manager
     }
 
     /**
-     * 主进程启动
-     * @param Server $server
+     * Stop swoole server.
      */
-    protected function onStart(Server $server)
+    public function stop()
+    {
+        $this->swoole->shutdown();
+    }
+
+    /**
+     * 主进程启动
+     * @param WebSocketServer $server
+     */
+    protected function onStart(WebSocketServer $server)
     {
         swoole_set_process_name('php-ps: master');
         $this->pid = $server->master_pid;
@@ -91,19 +103,19 @@ class Manager
 
     /**
      * 管理进程启动
-     * @param Server $server
+     * @param WebSocketServer $server
      */
-    protected function onManagerStart(Server $server)
+    protected function onManagerStart(WebSocketServer $server)
     {
         swoole_set_process_name('php-ps: manager');
     }
 
     /**
      * 工作进程启动（Worker/Task）
-     * @param Server $server
-     * @param int    $workerId
+     * @param WebSocketServer $server
+     * @param int             $workerId
      */
-    protected function onWorkerStart(Server $server, int $workerId)
+    protected function onWorkerStart(WebSocketServer $server, int $workerId)
     {
         $type = $server->taskworker ? 'task' : 'worker';
         swoole_set_process_name("php-ps: {$type}#{$workerId}");
@@ -114,13 +126,13 @@ class Manager
 
     /**
      * 任务处理回调
-     * @param Server $server
-     * @param int    $task_id
-     * @param int    $src_worker_id
+     * @param WebSocketServer $server
+     * @param int             $task_id
+     * @param int             $src_worker_id
      * @param        $data
      * @return null
      */
-    protected function onTask(Server $server, int $task_id, int $src_worker_id, $data)
+    protected function onTask(WebSocketServer $server, int $task_id, int $src_worker_id, $data)
     {
         // $tasl = new Task();
         $result = null;
@@ -142,7 +154,6 @@ class Manager
 //                    $chan->push($cli->statusCode);
 //                });
 //                $result = $chan->pop();
-
             }
         }
         //完成任务，结束并返回数据
@@ -152,23 +163,23 @@ class Manager
 
     /**
      * 任务完成响应
-     * @param Server $server
-     * @param int    $taskId
-     * @param string $data
+     * @param WebSocketServer $server
+     * @param int             $taskId
+     * @param string          $data
      */
-    protected function onFinish(Server $server, int $taskId, string $data)
+    protected function onFinish(WebSocketServer $server, int $taskId, string $data)
     {
     }
 
     /**
      * 工作进程异常（Worker/Task）
-     * @param Server $server
-     * @param int    $workerId
-     * @param int    $workerPid
-     * @param int    $exitCode
-     * @param int    $signal
+     * @param WebSocketServer $server
+     * @param int             $workerId
+     * @param int             $workerPid
+     * @param int             $exitCode
+     * @param int             $signal
      */
-    protected function onWorkerError(Server $server, int $workerId, int $workerPid, int $exitCode, int $signal)
+    protected function onWorkerError(WebSocketServer $server, int $workerId, int $workerPid, int $exitCode, int $signal)
     {
         echo "WorkerError: $workerId, pid: $workerPid, execCode: $exitCode, signal: $signal\n";
         if ($this->http instanceof Http) {
@@ -191,29 +202,29 @@ class Manager
 
     /**
      * 连接建立回调（WebSocket）
-     * @param Server  $server
-     * @param Request $request
+     * @param WebSocketServer $server
+     * @param Request         $request
      */
-    protected function onOpen(Server $server, Request $request)
+    protected function onOpen(WebSocketServer $server, Request $request)
     {
     }
 
     /**
      * 消息到达回调（WebSocket）
-     * @param Server          $server
+     * @param WebSocketServer $server
      * @param                 $frame
      * @throws Exception
      */
-    protected function onMessage(Server $server, Frame $frame)
+    protected function onMessage(WebSocketServer $server, Frame $frame)
     {
     }
 
     /**
      * 连接关闭回调（WebSocket）
-     * @param Server          $server
+     * @param WebSocketServer $server
      * @param                 $fd
      */
-    protected function onClose(Server $server, $fd)
+    protected function onClose(WebSocketServer $server, $fd)
     {
     }
 }

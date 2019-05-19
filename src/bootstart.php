@@ -4,5 +4,5 @@ use HZEX\TpSwoole\Service;
 use think\App;
 
 if (class_exists(App::class)) {
-    (new Service())->register();
+    App::getInstance()->make(Service::class)->register();
 }
