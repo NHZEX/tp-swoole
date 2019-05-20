@@ -137,7 +137,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     public function onShutdown($server): void
     {
-        // TODO: Implement onShutdown() method.
+        unlink($this->swoole->setting['pid_file']);
     }
 
     /**

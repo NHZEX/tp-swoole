@@ -1,17 +1,30 @@
 <?php
 
-namespace HZEX\TpSwoole;
+namespace HZEX\TpSwoole\Process;
 
 use Closure;
+use HZEX\TpSwoole\Manager;
 use Swoole\Coroutine;
 use Swoole\Process;
 
-abstract class ChildProcess
+abstract class ChildProcess implements ChildProcessInterface
 {
     /** @var Manager */
     protected $manager;
     /** @var Process */
     protected $process;
+    /** @var int 退出码 */
+    protected $exitCode = 0;
+    /** @var int 重启计数 */
+    protected $reStart = 0;
+
+    /**
+     * @return string
+     */
+    public function pipeName(): string
+    {
+        return static::class;
+    }
 
     public function __construct(Manager $server)
     {
@@ -31,9 +44,17 @@ abstract class ChildProcess
         return $this->process = new Process(
             Closure::fromCallable([$this, 'process']),
             false,
-            0,
-            true
+            SOCK_STREAM,
+            false
         );
+    }
+
+    /**
+     * @return Process|null
+     */
+    public function getProcess(): ?Process
+    {
+        return $this->process;
     }
 
     /**
@@ -44,21 +65,27 @@ abstract class ChildProcess
     {
         // 初始化子进程
         swoole_set_process_name('php-ps: ' . static::class);
-        Process::signal(SIGTERM, function ($signal_num) {
+        // 监听关闭信号
+        Process::signal(SIGTERM, function ($signal_num) use ($process) {
             echo "signal call = $signal_num, #{$this->process->pid}\r\n";
+            $process->exit($this->exitCode);
         });
 
-        // 检测主进程
+        // 监控主进程存活
         go(function () {
             while ($this->checkManagerProcess()) {
                 Coroutine::sleep(0.1);
             }
         });
 
-        // 业务代码
-        $this->processBox($process);
+        // 执行进程业务
+        go(function () use ($process) {
+            $ref = $this->processBox($process);
+            $this->exitCode = null === $ref ? 0 : $ref;
+            $process->exit($this->exitCode);
+        });
 
-        $process->exit(0);
+        return;
     }
 
     /**

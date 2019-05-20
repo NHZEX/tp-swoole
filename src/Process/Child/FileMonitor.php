@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace HZEX\TpSwoole\Process\Child;
 
-use HZEX\TpSwoole\ChildProcess;
+use HZEX\TpSwoole\Process\ChildProcess;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;

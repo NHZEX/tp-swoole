@@ -20,6 +20,7 @@ use think\console\input\Argument;
 use think\console\input\Option;
 use think\console\Output;
 use think\facade\Config;
+use Throwable;
 
 /**
  * Swoole 命令行，支持操作：start|stop|restart|reload
@@ -105,63 +106,6 @@ class ServerCommand extends Command
             $conf['daemonize'] = true;
             Config::set('swoole.server.options', $conf);
         }
-    }
-
-    /**
-     * Get Pid file path.
-     *
-     * @return string
-     */
-    protected function getPidPath()
-    {
-        return $this->config['server']['options']['pid_file'];
-    }
-
-    /**
-     * 获取主进程PID
-     * @access protected
-     * @return int
-     */
-    protected function getMasterPid()
-    {
-        $pidFile = $this->getPidPath();
-
-        if (file_exists($pidFile)) {
-            $masterPid = (int) file_get_contents($pidFile);
-        } else {
-            $masterPid = 0;
-        }
-
-        return $masterPid;
-    }
-
-    /**
-     * 删除PID文件
-     * @access protected
-     * @return void
-     */
-    protected function removePid()
-    {
-        $masterPid = $this->getPidPath();
-
-        if (file_exists($masterPid)) {
-            unlink($masterPid);
-        }
-    }
-
-    /**
-     * 判断PID是否在运行
-     * @access protected
-     * @param  int $pid
-     * @return bool
-     */
-    protected function isRunning($pid)
-    {
-        if (empty($pid)) {
-            return false;
-        }
-
-        return Process::kill($pid, 0);
     }
 
     /**
@@ -253,12 +197,105 @@ class ServerCommand extends Command
             return false;
         }
 
-        $this->output->writeln('Stopping swoole server...');
+        $this->output->writeln("Stopping swoole server#{$pid}...");
 
-        Process::kill($pid, SIGTERM);
+        $isRunning = $this->killProcess($pid, SIGTERM, 15);
+
+        if ($isRunning) {
+            $this->output->error('Unable to stop the swoole_http_server process.');
+            return false;
+        }
+
         $this->removePid();
 
         $this->output->writeln('> success');
         return true;
+    }
+
+    /**
+     * Get Pid file path.
+     *
+     * @return string
+     */
+    protected function getPidPath()
+    {
+        return $this->config['server']['options']['pid_file'];
+    }
+
+    /**
+     * 获取主进程PID
+     * @access protected
+     * @return int
+     */
+    protected function getMasterPid()
+    {
+        $pidFile = $this->getPidPath();
+
+        if (file_exists($pidFile)) {
+            $masterPid = (int) file_get_contents($pidFile);
+        } else {
+            $masterPid = 0;
+        }
+
+        return $masterPid;
+    }
+
+    /**
+     * 删除PID文件
+     * @access protected
+     * @return void
+     */
+    protected function removePid()
+    {
+        $masterPid = $this->getPidPath();
+
+        if (file_exists($masterPid)) {
+            unlink($masterPid);
+        }
+    }
+
+    /**
+     * 杀死进程
+     * @param     $pid
+     * @param     $sig
+     * @param int $wait
+     * @return bool
+     */
+    protected function killProcess($pid, $sig, $wait = 0)
+    {
+        Process::kill($pid, $sig);
+
+        if ($wait) {
+            $start = time();
+
+            do {
+                if (!$this->isRunning($pid)) {
+                    break;
+                }
+
+                usleep(100000);
+            } while (time() < $start + $wait);
+        }
+
+        return $this->isRunning($pid);
+    }
+
+    /**
+     * 判断PID是否在运行
+     * @access protected
+     * @param  int $pid
+     * @return bool
+     */
+    protected function isRunning($pid)
+    {
+        if (empty($pid)) {
+            return false;
+        }
+
+        try {
+            return Process::kill($pid, 0);
+        } catch (Throwable $e) {
+            return false;
+        }
     }
 }
