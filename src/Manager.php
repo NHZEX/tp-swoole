@@ -19,6 +19,8 @@ use Throwable;
 
 class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 {
+    use Concerns\MessageSwitchTrait;
+
     /** @var Container */
     private $container;
 
@@ -63,7 +65,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
         $this->isWebsocket = $this->config['websocket']['enabled'] ?? false;
 
         if ($this->config['auto_reload'] ?? false) {
-            $this->swoole->addProcess((new FileMonitor())->makeProcess());
+            $this->initChildProcess[] = (new FileMonitor());
         }
 
         $this->initialize();
@@ -71,7 +73,9 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 
     protected function initialize()
     {
+        $this->initMessageSwitch();
         $this->registerServerEvent();
+        $this->mountProcess();
 
         $this->container->make(Http::class)->registerHandle();
     }
@@ -256,8 +260,12 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     protected function onMessage(WsServer $server, Frame $frame)
     {
+        $uid = $server->getClientInfo($frame->fd)['uid'] ?? -1;
+        if (-1 === $uid && is_numeric($frame->data)) {
+            $server->bind($frame->fd, (int) $frame->data);
+        }
         echo "accept#{$frame->fd}: " . substr($frame->data, 0, 16) . '...' . PHP_EOL;
-        $server->push($frame->fd, "Reply: {$frame->data}");
+        $server->push($frame->fd, "Reply#{$frame->fd}#{$uid}: {$frame->data}");
     }
 
     /**

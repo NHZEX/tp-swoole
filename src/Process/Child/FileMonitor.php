@@ -59,7 +59,7 @@ class FileMonitor extends ChildProcess
                                 continue;
                             } else {
                                 echo "[update] $file reload...\n";
-                                $this->manager->getSwoole()->reload();
+                                $this->swoole->reload();
                                 break 2;
                             }
                         }
