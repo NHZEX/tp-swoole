@@ -69,6 +69,8 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     {
         $this->prepareWebsocket();
         $this->registerServerEvent();
+
+        $this->container->make(Http::class)->registerHandle();
     }
 
     protected function registerServerEvent()
@@ -167,11 +169,10 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     {
         $type = $server->taskworker ? 'task' : 'worker';
         swoole_set_process_name("php-ps: {$type}#{$workerId}");
-        if (false === $server->taskworker) {
-            $this->container->make(Http::class)->setWorkerId($workerId);
-        }
         // 设置当前工人Id
         $this->workerId = $workerId;
+        // 事件触发
+        $this->container->hook->listen('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -181,7 +182,8 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     public function onWorkerStop($server, int $workerId): void
     {
-        // TODO: Implement onWorkerStop() method.
+        // 事件触发
+        $this->container->hook->listen('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -195,7 +197,8 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     public function onWorkerError($server, int $workerId, int $workerPid, int $exitCode, int $signal): void
     {
         echo "WorkerError: $workerId, pid: $workerPid, execCode: $exitCode, signal: $signal\n";
-        $this->container->make(Http::class)->appShutdown();
+        // 事件触发
+        $this->container->hook->listen('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -264,7 +267,8 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     public function onRequest(Request $request, Response $response): void
     {
-        $this->container->make(Http::class)->httpRequest($request, $response);
+        // 事件触发
+        $this->container->hook->listen('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -277,5 +281,23 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
         if ($this->isServerWebsocket) {
             $this->onWsClose($server, $fd);
         }
+    }
+
+    /**
+     * 调试容器
+     * @param Container $container
+     * @param           $workerId
+     */
+    public static function debugContainer(Container $container, $workerId)
+    {
+        $debug = array_map(function ($val) use ($workerId) {
+            if (is_object($val)) {
+                return get_class($val) . ' = ' . hash('crc32', spl_object_hash($val) . $workerId);
+            } else {
+                return $val;
+            }
+        }, $container->all());
+        ksort($debug, SORT_STRING); // SORT_FLAG_CASE
+        $container->log->debug($debug);
     }
 }

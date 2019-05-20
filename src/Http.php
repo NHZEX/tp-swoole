@@ -2,6 +2,8 @@
 
 namespace HZEX\TpSwoole;
 
+use Closure;
+use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
 use HZEX\TpSwoole\Tp\App;
 use HZEX\TpSwoole\Tp\Cookie;
 use HZEX\TpSwoole\Tp\Log;
@@ -9,13 +11,16 @@ use HZEX\TpSwoole\Tp\Session;
 use Swoole\Coroutine;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
+use Swoole\Http\Server as HttpServer;
+use Swoole\Server;
+use Swoole\WebSocket\Server as WsServer;
 use think\Container;
 use think\Facade;
 use think\facade\Cookie as CookieFacade;
 use think\facade\Session as SessionFacade;
 use Throwable;
 
-class Http
+class Http implements SwooleServerHttpInterface
 {
     /** @var App */
     protected $app;
@@ -24,16 +29,14 @@ class Http
 
     public function __construct()
     {
+        $this->app = App::getInstance();
     }
 
-    /**
-     * @param int $id
-     * @return $this
-     */
-    public function setWorkerId(int $id)
+    public function registerHandle()
     {
-        $this->workerId = $id;
-        return $this;
+        $this->app->hook->add('swoole.onWorkerStart', function ($p) {$this->onWorkerStart(...$p);});
+        $this->app->hook->add('swoole.onWorkerError', function ($p) {$this->onWorkerError(...$p);});
+        $this->app->hook->add('swoole.onRequest', function ($p) {$this->onRequest(...$p);});
     }
 
     /**
@@ -50,7 +53,7 @@ class Http
     private function initApp()
     {
         // 应用实例化
-        $this->app = new App(App::getInstance()->getAppPath());
+        $this->app = new App($this->app->getAppPath());
         // 重新绑定日志类
         $this->app->bindTo('log', Log::class);
 
@@ -81,28 +84,47 @@ class Http
     }
 
     /**
-     * 处理请求
+     * 工作进程启动（Worker/Task）
+     * @param HttpServer|Server|WsServer $server
+     * @param int                        $workerId
+     */
+    protected function onWorkerStart($server, int $workerId): void
+    {
+        if (false === $server->taskworker) {
+            $this->workerId = $workerId;
+            $this->initApp();
+        }
+    }
+
+    /**
+     * 工作进程异常（Worker/Task）
+     * @param HttpServer $server
+     * @param int        $workerId
+     * @param int        $workerPid
+     * @param int        $exitCode
+     * @param int        $signal
+     */
+    protected function onWorkerError(HttpServer $server, int $workerId, int $workerPid, int $exitCode, int $signal): void
+    {
+        echo "WorkerError: $workerId, pid: $workerPid, execCode: $exitCode, signal: $signal\n";
+        $this->appShutdown();
+    }
+
+    /**
+     * 请求到达回调（Http）
      * @param Request  $request
      * @param Response $response
      * @throws Throwable
      */
-    public function httpRequest(Request $request, Response $response)
+    public function onRequest(Request $request, Response $response): void
     {
-        if (null === $this->app) {
-            $this->initApp();
-        }
-
         $this->app->log->debug("workerId: {$this->getWorkerId()}, coroutineId: " . Coroutine::getCid());
-
         // 请求清理
         $this->clear($this->app);
-
         // 执行应用并响应
         $resp = $this->app->runSwoole($request);
-
         // 发送请求
         $this->sendResponse($this->app, $resp, $response);
-
         // 请求完成
         $this->appShutdown();
     }
@@ -154,19 +176,6 @@ class Http
         }
 
         $swooleResponse->end();
-    }
-
-    protected static function debugContainer(Container $container, $workerId)
-    {
-        $debug = array_map(function ($val) use ($workerId) {
-            if (is_object($val)) {
-                return get_class($val) . ' = ' . hash('crc32', spl_object_hash($val) . $workerId);
-            } else {
-                return $val;
-            }
-        }, $container->all());
-        ksort($debug, SORT_STRING); // SORT_FLAG_CASE
-        $container->log->debug($debug);
     }
 
     public function appShutdown()
