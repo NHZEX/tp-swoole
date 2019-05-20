@@ -3,7 +3,7 @@
 namespace HZEX\TpSwoole;
 
 use Closure;
-use HZEX\TpSwoole\Concerns\InteractsWithWebsocket;
+use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use HZEX\TpSwoole\Process\Child\FileMonitor;
 use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
 use HZEX\TpSwoole\Swoole\SwooleServerInterface;
@@ -34,9 +34,6 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     /** @var bool  */
     protected $handShakeHandle = false;
 
-    /** @var array  */
-    protected $websocketClients = [];
-
     /** @var int */
     private $pid;
 
@@ -60,13 +57,13 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     {
         $this->container = Container::getInstance();
 
-        $this->swoole = $this->container->make('swoole.server');
+        $this->swoole = ServerFacade::instance();
         $this->config = $this->container->config->pull('swoole');
 
         $this->isWebsocket = $this->config['websocket']['enabled'] ?? false;
 
         if ($this->config['auto_reload'] ?? false) {
-            $this->swoole->addProcess((new FileMonitor($this))->makeProcess());
+            $this->swoole->addProcess((new FileMonitor())->makeProcess());
         }
 
         $this->initialize();
@@ -104,11 +101,15 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 
     /**
      * 获取SwooleServer实例
-     * @return WsServer
+     * @return Server|HttpServer|WsServer
      */
     public function getSwoole()
     {
-        return $this->swoole;
+        static $swoole;
+        if (null === $swoole) {
+            $swoole = ServerFacade::instance();
+        }
+        return $swoole;
     }
 
     /**
@@ -116,7 +117,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     public function start()
     {
-        $this->swoole->start();
+        ServerFacade::instance()->start();
     }
 
     /**
@@ -124,7 +125,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     public function stop()
     {
-        $this->swoole->shutdown();
+        ServerFacade::instance()->shutdown();
     }
 
     /**
@@ -244,7 +245,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     protected function onOpen(WsServer $server, Request $request)
     {
-        $this->websocketClients[$request->fd] = true;
+        $server->push($request->fd, '{"type": "msg", "code":1600}');
         echo "join#{$request->fd}\n";
     }
 
@@ -255,7 +256,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     protected function onMessage(WsServer $server, Frame $frame)
     {
-        echo "accept#{$frame->fd}: {$frame->data}\n";
+        echo "accept#{$frame->fd}: " . substr($frame->data, 0, 16) . '...' . PHP_EOL;
         $server->push($frame->fd, "Reply: {$frame->data}");
     }
 
@@ -267,8 +268,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     protected function onClose($server, int $fd, int $reactorId)
     {
-        if ($this->isWebsocket && isset($this->websocketClients[$fd])) {
-            unset($this->websocketClients[$fd]);
+        if ($this->isWebsocket && $server->isEstablished($fd)) {
             $this->onWsClose($server, $fd, $reactorId);
         }
     }

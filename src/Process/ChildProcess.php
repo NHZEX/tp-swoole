@@ -1,16 +1,20 @@
 <?php
+declare(strict_types=1);
 
 namespace HZEX\TpSwoole\Process;
 
 use Closure;
-use HZEX\TpSwoole\Manager;
+use HZEX\TpSwoole\Facade\Manager;
 use Swoole\Coroutine;
+use Swoole\Http\Server;
 use Swoole\Process;
 
 abstract class ChildProcess implements ChildProcessInterface
 {
     /** @var Manager */
     protected $manager;
+    /** @var Server|\Swoole\Server|\Swoole\WebSocket\Server  */
+    protected $swoole;
     /** @var Process */
     protected $process;
     /** @var int 退出码 */
@@ -26,9 +30,8 @@ abstract class ChildProcess implements ChildProcessInterface
         return static::class;
     }
 
-    public function __construct(Manager $server)
+    public function __construct()
     {
-        $this->manager = $server;
         $this->init();
     }
 
@@ -41,12 +44,16 @@ abstract class ChildProcess implements ChildProcessInterface
      */
     public function makeProcess(): Process
     {
-        return $this->process = new Process(
-            Closure::fromCallable([$this, 'process']),
-            false,
-            SOCK_STREAM,
-            false
-        );
+        $this->reStart++;
+        if (null === $this->process) {
+            $this->process = new Process(
+                Closure::fromCallable([$this, 'process']),
+                false,
+                SOCK_STREAM,
+                false
+            );
+        }
+        return $this->process;
     }
 
     /**
@@ -64,12 +71,9 @@ abstract class ChildProcess implements ChildProcessInterface
     protected function process(Process $process)
     {
         // 初始化子进程
-        swoole_set_process_name('php-ps: ' . static::class);
-        // 监听关闭信号
-        Process::signal(SIGTERM, function ($signal_num) use ($process) {
-            echo "signal call = $signal_num, #{$this->process->pid}\r\n";
-            $process->exit($this->exitCode);
-        });
+        $process->name('php-ps: ' . static::class);
+        $this->manager = Manager::instance();
+        $this->swoole = $this->manager->getSwoole();
 
         // 监控主进程存活
         go(function () {
@@ -100,7 +104,7 @@ abstract class ChildProcess implements ChildProcessInterface
      */
     public function checkManagerProcess()
     {
-        $mpid = $this->manager->getSwoole()->master_pid;
+        $mpid = $this->swoole->master_pid;
         $process = $this->process;
 
         if (false == Process::kill($mpid, 0)) {
