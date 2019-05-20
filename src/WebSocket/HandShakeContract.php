@@ -11,35 +11,16 @@
 
 namespace HZEX\TpSwoole\WebSocket;
 
-use Swoole\Http\Request;
 use Swoole\Websocket\Frame;
-use Swoole\WebSocket\Server as WsServer;
+use think\Request;
 
-interface HandlerContract
+interface HandShakeContract
 {
     /**
      * "onOpen" listener.
      *
-     * @param WsServer             $server
+     * @param int     $fd
      * @param Request $request
      */
-    public function onOpen(WsServer $server, Request $request);
-
-    /**
-     * "onMessage" listener.
-     *  only triggered when event handler not found
-     *
-     * @param WsServer $server
-     * @param Frame    $frame
-     */
-    public function onMessage(WsServer $server, Frame $frame);
-
-    /**
-     * "onClose" listener.
-     *
-     * @param WsServer $server
-     * @param int      $fd
-     * @param int      $reactorId
-     */
-    public function onClose(WsServer $server, int $fd, int $reactorId);
+    public function onOpen($fd, Request $request);
 }

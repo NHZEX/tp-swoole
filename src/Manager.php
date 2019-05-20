@@ -26,13 +26,20 @@ use Throwable;
 
 class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 {
-    use InteractsWithWebsocket;
-
     /** @var Container */
     private $container;
 
     /** @var HttpServer|WsServer */
     private $swoole;
+
+    /** @var array */
+    private $config;
+
+    /** @var bool  */
+    protected $isWebsocket = false;
+
+    /** @var bool  */
+    protected $handShakeHandle = false;
 
     /** @var int */
     private $pid;
@@ -50,6 +57,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
         'Connect', 'Receive', 'Close', // Tcp
         'Packet', // Udp
         'Request', // Http
+        'HandShake', 'Open', 'Message' // WebSocket
     ];
 
     public function __construct()
@@ -57,8 +65,11 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
         $this->container = Container::getInstance();
 
         $this->swoole = $this->container->make('swoole.server');
+        $this->config = $this->container->config->pull('swoole');
 
-        if ($this->container->config->get('swoole.auto_reload')) {
+        $this->isWebsocket = $this->config['websocket']['enabled'] ?? false;
+
+        if ($this->config['auto_reload'] ?? false) {
             $this->swoole->addProcess((new FileMonitor($this))->makeProcess());
         }
 
@@ -67,7 +78,6 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 
     protected function initialize()
     {
-        $this->prepareWebsocket();
         $this->registerServerEvent();
 
         $this->container->make(Http::class)->registerHandle();
@@ -83,19 +93,17 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
         $this->swoole->on('Task', Closure::fromCallable([$this, 'onTask']));
         $this->swoole->on('Finish', Closure::fromCallable([$this, 'onFinish']));
 
-        $this->swoole->on('Request', Closure::fromCallable([$this, 'onRequest']));
-
-        $this->swoole->on('Open', Closure::fromCallable([$this, 'onOpen']));
-        $this->swoole->on('Message', Closure::fromCallable([$this, 'onMessage']));
         $this->swoole->on('Close', Closure::fromCallable([$this, 'onClose']));
 
-//        foreach ($this->events as $event) {
-//            $callback = method_exists($this, $listener) ? [$this, $listener] : function () use ($event) {
-//                $this->container->event->trigger("swoole.$event", func_get_args());
-//            };
-//
-//            $this->swoole->on($event, $callback);
-//        }
+        $this->swoole->on('Request', Closure::fromCallable([$this, 'onRequest']));
+
+        if ($this->isWebsocket) {
+            $this->swoole->on('Open', Closure::fromCallable([$this, 'onOpen']));
+            $this->swoole->on('Message', Closure::fromCallable([$this, 'onMessage']));
+        }
+        if ($this->isWebsocket && $this->handShakeHandle) {
+            $this->swoole->on('HandShake', Closure::fromCallable([$this, 'onHandShake']));
+        }
     }
 
     /**
@@ -213,6 +221,72 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     }
 
     /**
+     * 请求到达回调（Http）
+     * @param Request  $request
+     * @param Response $response
+     * @throws Throwable
+     */
+    public function onRequest(Request $request, Response $response): void
+    {
+        // 事件触发
+        $this->container->hook->listen('swoole.' . __FUNCTION__, func_get_args());
+    }
+
+    /**
+     * 自定义握手
+     * @param Request  $request
+     * @param Response $response
+     */
+    protected function onHandShake(Request $request, Response $response)
+    {
+    }
+
+    /**
+     * 连接建立回调（WebSocket）
+     * @param WsServer $server
+     * @param Request         $request
+     */
+    protected function onOpen(WsServer $server, Request $request)
+    {
+        echo "join#{$request->fd}\n";
+    }
+
+    /**
+     * 消息到达回调（WebSocket）
+     * @param WsServer $server
+     * @param Frame           $frame
+     */
+    protected function onMessage(WsServer $server, Frame $frame)
+    {
+        echo "accept#{$frame->fd}: {$frame->data}\n";
+        $server->push($frame->fd, "Reply: {$frame->data}");
+    }
+
+    /**
+     * 连接关闭回调
+     * @param Server|HttpServer|WsServer $server
+     * @param int                        $fd
+     * @param int                        $reactorId
+     */
+    protected function onClose($server, int $fd, int $reactorId)
+    {
+        if ($this->isWebsocket) {
+            $this->onWsClose($server, $fd, $reactorId);
+        }
+    }
+
+    /**
+     * 连接关闭回调（WebSocket）
+     * @param WsServer $server
+     * @param int             $fd
+     * @param int             $reactorId
+     */
+    protected function onWsClose(WsServer $server, int $fd, int $reactorId)
+    {
+        echo "disconnect#{$fd}: {$reactorId}\n";
+    }
+
+    /**
      * 任务处理回调
      * @param WsServer $server
      * @param int      $task_id
@@ -257,30 +331,6 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     protected function onFinish($server, int $taskId, string $data)
     {
-    }
-
-    /**
-     * 请求到达回调（Http）
-     * @param Request  $request
-     * @param Response $response
-     * @throws Throwable
-     */
-    public function onRequest(Request $request, Response $response): void
-    {
-        // 事件触发
-        $this->container->hook->listen('swoole.' . __FUNCTION__, func_get_args());
-    }
-
-    /**
-     * 连接关闭回调
-     * @param HttpServer|WsServer $server
-     * @param                 $fd
-     */
-    protected function onClose($server, $fd)
-    {
-        if ($this->isServerWebsocket) {
-            $this->onWsClose($server, $fd);
-        }
     }
 
     /**
