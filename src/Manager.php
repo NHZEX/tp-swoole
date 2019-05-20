@@ -34,9 +34,6 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     /** @var HttpServer|WsServer */
     private $swoole;
 
-    /** @var Http */
-    private $http;
-
     /** @var int */
     private $pid;
 
@@ -169,7 +166,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
         $type = $server->taskworker ? 'task' : 'worker';
         swoole_set_process_name("php-ps: {$type}#{$workerId}");
         if (false === $server->taskworker) {
-            $this->http = new Http($workerId);
+            $this->container->make(Http::class)->setWorkerId($workerId);
         }
         // 设置当前工人Id
         $this->workerId = $workerId;
@@ -196,9 +193,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     public function onWorkerError($server, int $workerId, int $workerPid, int $exitCode, int $signal): void
     {
         echo "WorkerError: $workerId, pid: $workerPid, execCode: $exitCode, signal: $signal\n";
-        if ($this->http instanceof Http) {
-            $this->http->appShutdown();
-        }
+        $this->container->make(Http::class)->appShutdown();
     }
 
     /**
@@ -267,8 +262,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     public function onRequest(Request $request, Response $response): void
     {
-        $this->http->httpRequest($request, $response);
-        $this->http->appShutdown();
+        $this->container->make(Http::class)->httpRequest($request, $response);
     }
 
     /**

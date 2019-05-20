@@ -22,13 +22,31 @@ class Http
     /** @var int */
     protected $workerId;
 
-    public function __construct(int $workerId)
+    public function __construct()
     {
-        $this->workerId = $workerId;
-
-        $this->initApp();
     }
 
+    /**
+     * @param int $id
+     * @return $this
+     */
+    public function setWorkerId(int $id)
+    {
+        $this->workerId = $id;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getWorkerId()
+    {
+        return $this->workerId;
+    }
+
+    /**
+     *
+     */
     private function initApp()
     {
         // 应用实例化
@@ -63,14 +81,6 @@ class Http
     }
 
     /**
-     * @return int
-     */
-    public function getWorkerId()
-    {
-        return $this->workerId;
-    }
-
-    /**
      * 处理请求
      * @param Request  $request
      * @param Response $response
@@ -78,7 +88,11 @@ class Http
      */
     public function httpRequest(Request $request, Response $response)
     {
-        $this->app->log->debug("workerId: {$this->workerId}, coroutineId: " . Coroutine::getCid());
+        if (null === $this->app) {
+            $this->initApp();
+        }
+
+        $this->app->log->debug("workerId: {$this->getWorkerId()}, coroutineId: " . Coroutine::getCid());
 
         // 请求清理
         $this->clear($this->app);
@@ -88,6 +102,9 @@ class Http
 
         // 发送请求
         $this->sendResponse($this->app, $resp, $response);
+
+        // 请求完成
+        $this->appShutdown();
     }
 
     /**
@@ -139,7 +156,7 @@ class Http
         $swooleResponse->end();
     }
 
-    public static function debugContainer(Container $container, $workerId)
+    protected static function debugContainer(Container $container, $workerId)
     {
         $debug = array_map(function ($val) use ($workerId) {
             if (is_object($val)) {
