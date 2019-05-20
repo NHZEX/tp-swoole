@@ -58,7 +58,9 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 
         $this->swoole = $this->container->make('swoole.server');
 
-        $this->swoole->addProcess((new FileMonitor($this))->makeProcess());
+        if ($this->container->config->get('swoole.auto_reload')) {
+            $this->swoole->addProcess((new FileMonitor($this))->makeProcess());
+        }
 
         $this->initialize();
     }

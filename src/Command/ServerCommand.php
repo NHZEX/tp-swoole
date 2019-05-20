@@ -101,7 +101,9 @@ class ServerCommand extends Command
 
         // 开启守护进程模式
         if ($this->input->hasOption('daemon')) {
-            $this->config['server']['daemonize'] = true;
+            $conf = Config::get('swoole.server.options', []);
+            $conf['daemonize'] = true;
+            Config::set('swoole.server.options', $conf);
         }
     }
 

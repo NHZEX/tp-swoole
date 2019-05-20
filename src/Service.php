@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace HZEX\TpSwoole;
 
 use HZEX\TpSwoole\Command\ServerCommand;
-use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Runtime;
 use Swoole\WebSocket\Server as WebsocketServer;
