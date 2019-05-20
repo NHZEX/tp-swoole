@@ -2,19 +2,19 @@
 
 namespace HZEX\TpSwoole;
 
-use Closure;
+use Exception;
 use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
 use HZEX\TpSwoole\Tp\App;
 use HZEX\TpSwoole\Tp\Cookie;
 use HZEX\TpSwoole\Tp\Log;
 use HZEX\TpSwoole\Tp\Session;
-use Swoole\Coroutine;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
-use think\Container;
+use think\console\Output as ConsoleOutput;
+use think\Error;
 use think\Facade;
 use think\facade\Cookie as CookieFacade;
 use think\facade\Session as SessionFacade;
@@ -118,15 +118,18 @@ class Http implements SwooleServerHttpInterface
      */
     public function onRequest(Request $request, Response $response): void
     {
-        $this->app->log->debug("workerId: {$this->getWorkerId()}, coroutineId: " . Coroutine::getCid());
-        // 请求清理
-        $this->clear($this->app);
-        // 执行应用并响应
-        $resp = $this->app->runSwoole($request);
-        // 发送请求
-        $this->sendResponse($this->app, $resp, $response);
-        // 请求完成
-        $this->appShutdown();
+        try {
+            // 执行应用并响应
+            $resp = $this->app->runSwoole($request);
+            // 发送请求
+            $this->sendResponse($this->app, $resp, $response);
+            // 请求完成
+            $this->appShutdown();
+        } catch (Throwable $e) {
+            $this->logServerError($e);
+        } finally {
+            $this->clear($this->app);
+        }
     }
 
     /**
@@ -181,5 +184,15 @@ class Http implements SwooleServerHttpInterface
     public function appShutdown()
     {
         $this->app->log->save();
+    }
+
+    /**
+     * Log server error.
+     *
+     * @param Throwable|Exception $e
+     */
+    public function logServerError(Throwable $e)
+    {
+        Error::getExceptionHandler()->renderForConsole(new ConsoleOutput, $e);
     }
 }
