@@ -3,23 +3,16 @@
 namespace HZEX\TpSwoole;
 
 use Closure;
-use Exception;
 use HZEX\TpSwoole\Concerns\InteractsWithWebsocket;
-use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use HZEX\TpSwoole\Process\Child\FileMonitor;
 use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
 use HZEX\TpSwoole\Swoole\SwooleServerInterface;
-use HZEX\TpSwoole\Swoole\SwooleWebSocketInterface;
 use HZEX\TpSwoole\Tp\Log\Driver\SocketLog;
-use Swoole\Coroutine;
-use Swoole\Coroutine\Http\Client;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
-use Swoole\Runtime;
-use Swoole\Server;
-use Swoole\Server\Task;
-use Swoole\WebSocket\Frame;
 use Swoole\Http\Server as HttpServer;
+use Swoole\Server;
+use Swoole\WebSocket\Frame;
 use Swoole\WebSocket\Server as WsServer;
 use think\Container;
 use Throwable;
@@ -40,6 +33,9 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 
     /** @var bool  */
     protected $handShakeHandle = false;
+
+    /** @var array  */
+    protected $websocketClients = [];
 
     /** @var int */
     private $pid;
@@ -248,6 +244,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     protected function onOpen(WsServer $server, Request $request)
     {
+        $this->websocketClients[$request->fd] = true;
         echo "join#{$request->fd}\n";
     }
 
@@ -270,7 +267,8 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     protected function onClose($server, int $fd, int $reactorId)
     {
-        if ($this->isWebsocket) {
+        if ($this->isWebsocket && isset($this->websocketClients[$fd])) {
+            unset($this->websocketClients[$fd]);
             $this->onWsClose($server, $fd, $reactorId);
         }
     }
