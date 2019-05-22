@@ -38,8 +38,8 @@ class Http implements SwooleServerHttpInterface
         $this->isRegistered = true;
 
         // 监听公共事件
-        $this->app->event->listen('swoole.onWorkerStart', Closure::fromCallable([$this, 'onWorkerStart']));
-        $this->app->event->listen('swoole.onWorkerError', Closure::fromCallable([$this, 'onWorkerError']));
+        $this->app->event->listen('swoole.onWorkerStart', Closure::fromCallable([$this, 'onStart']));
+        $this->app->event->listen('swoole.onWorkerError', Closure::fromCallable([$this, 'onError']));
 
         // 监听私有事件
         /** @var WsServer $swoole */
@@ -88,7 +88,7 @@ class Http implements SwooleServerHttpInterface
      * @param HttpServer|Server|WsServer $server
      * @param int                        $workerId
      */
-    protected function onWorkerStart($server, int $workerId): void
+    protected function onStart($server, int $workerId): void
     {
         if ($server->taskworker) {
             return;
@@ -104,9 +104,8 @@ class Http implements SwooleServerHttpInterface
      * @param int        $exitCode
      * @param int        $signal
      */
-    protected function onWorkerError(HttpServer $server, int $workerId, int $workerPid, int $exitCode, int $signal): void
+    protected function onError(HttpServer $server, int $workerId, int $workerPid, int $exitCode, int $signal): void
     {
-        echo "WorkerError: $workerId, pid: $workerPid, execCode: $exitCode, signal: $signal\n";
         $this->appShutdown();
     }
 
