@@ -18,6 +18,12 @@ use Swoole\WebSocket\Server as WsServer;
 interface HandlerContract
 {
     /**
+     * @param WsServer $server
+     * @param int      $workerId
+     */
+    public function onStart(WsServer $server, int $workerId);
+
+    /**
      * "onOpen" listener.
      *
      * @param WsServer             $server

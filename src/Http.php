@@ -2,9 +2,8 @@
 
 namespace HZEX\TpSwoole;
 
-use Exception;
+use Closure;
 use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
-use HZEX\TpSwoole\Tp\App;
 use HZEX\TpSwoole\Tp\Cookie;
 use HZEX\TpSwoole\Tp\Log;
 use HZEX\TpSwoole\Tp\Session;
@@ -13,8 +12,7 @@ use Swoole\Http\Response;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
-use think\console\Output as ConsoleOutput;
-use think\Error;
+use think\App;
 use think\Facade;
 use think\facade\Cookie as CookieFacade;
 use think\facade\Session as SessionFacade;
@@ -22,29 +20,31 @@ use Throwable;
 
 class Http implements SwooleServerHttpInterface
 {
-    /** @var App */
+    /** @var Tp\App|App */
     protected $app;
-    /** @var int */
-    protected $workerId;
+    /** @var bool */
+    private $isRegistered = false;
 
-    public function __construct()
+    public function __construct(App $app)
     {
-        $this->app = App::getInstance();
+        $this->app = $app;
     }
 
-    public function registerHandle()
+    public function registerEvent()
     {
-        $this->app->hook->add('swoole.onWorkerStart', function ($p) {$this->onWorkerStart(...$p);});
-        $this->app->hook->add('swoole.onWorkerError', function ($p) {$this->onWorkerError(...$p);});
-        $this->app->hook->add('swoole.onRequest', function ($p) {$this->onRequest(...$p);});
-    }
+        if ($this->isRegistered) {
+            return;
+        }
+        $this->isRegistered = true;
 
-    /**
-     * @return int
-     */
-    public function getWorkerId()
-    {
-        return $this->workerId;
+        // 监听公共事件
+        $this->app->event->listen('swoole.onWorkerStart', Closure::fromCallable([$this, 'onWorkerStart']));
+        $this->app->event->listen('swoole.onWorkerError', Closure::fromCallable([$this, 'onWorkerError']));
+
+        // 监听私有事件
+        /** @var WsServer $swoole */
+        $swoole = \HZEX\TpSwoole\Facade\Server::instance();
+        $swoole->on('Request', Closure::fromCallable([$this, 'onRequest']));
     }
 
     /**
@@ -53,7 +53,7 @@ class Http implements SwooleServerHttpInterface
     private function initApp()
     {
         // 应用实例化
-        $this->app = new App($this->app->getAppPath());
+        $this->app = new Tp\App();
         // 重新绑定日志类
         $this->app->bindTo('log', Log::class);
 
@@ -90,10 +90,10 @@ class Http implements SwooleServerHttpInterface
      */
     protected function onWorkerStart($server, int $workerId): void
     {
-        if (false === $server->taskworker) {
-            $this->workerId = $workerId;
-            $this->initApp();
+        if ($server->taskworker) {
+            return;
         }
+        $this->initApp();
     }
 
     /**
@@ -126,7 +126,7 @@ class Http implements SwooleServerHttpInterface
             // 请求完成
             $this->appShutdown();
         } catch (Throwable $e) {
-            $this->logServerError($e);
+            Manager::logServerError($e);
         } finally {
             $this->clear($this->app);
         }
@@ -151,11 +151,12 @@ class Http implements SwooleServerHttpInterface
 
     /**
      * 发送数据
-     * @param App             $app
+     * @param Tp\App          $app
      * @param \think\Response $thinkResponse
      * @param Response        $swooleResponse
+     * @return bool
      */
-    protected function sendResponse(App $app, \think\Response $thinkResponse, Response $swooleResponse)
+    protected function sendResponse(Tp\App $app, \think\Response $thinkResponse, Response $swooleResponse)
     {
         // 发送Header
         foreach ($thinkResponse->getHeader() as $key => $val) {
@@ -179,20 +180,13 @@ class Http implements SwooleServerHttpInterface
         }
 
         $swooleResponse->end();
+
+        // 中止事件
+        return true;
     }
 
     public function appShutdown()
     {
         $this->app->log->save();
-    }
-
-    /**
-     * Log server error.
-     *
-     * @param Throwable|Exception $e
-     */
-    public function logServerError(Throwable $e)
-    {
-        Error::getExceptionHandler()->renderForConsole(new ConsoleOutput, $e);
     }
 }

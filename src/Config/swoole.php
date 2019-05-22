@@ -1,41 +1,56 @@
 <?php
 
+use think\facade\Env;
+
 return [
+    'auto_reload' => false,
+    'enable_coroutine' => false,
+    'instances' => [],
+    'resetters' => [],
+    // 'tables' => [],
     'server' => [
         'host' => '0.0.0.0', // 监听地址
-        'port' => 9502, // 监听端口
+        'port' => 9501, // 监听端口
         'mode' => SWOOLE_PROCESS, // 运行模式 默认为SWOOLE_PROCESS
         'sock_type' => SWOOLE_TCP, // sock type 默认为SWOOLE_SOCK_TCP
         'options' => [
-            'pid_file' => runtime_path() . 'swoole.pid',
-            'log_file' => runtime_path() . 'swoole.log',
             'daemonize' => false,
-            // Normally this value should be 1~4 times larger according to your cpu cores.
-            'reactor_num' => swoole_cpu_num(),
-            'worker_num' => swoole_cpu_num(),
-            'task_worker_num' => swoole_cpu_num(),
+            'dispatch_mode' => 2, //固定模式
+            'worker_num' => 1,
+            'enable_coroutine' => false,
+
+            'task_worker_num' => 4,
+            'task_enable_coroutine' => false,
+
+            'pid_file' => Env::get('runtime_path') . 'swoole.pid',
+            'log_file' => Env::get('runtime_path') . 'swoole.log',
+
             'enable_static_handler' => true,
-            'document_root' => root_path('public'),
-            'package_max_length' => 20 * 1024 * 1024,
-            'buffer_output_size' => 10 * 1024 * 1024,
-            'socket_buffer_size' => 128 * 1024 * 1024,
-            'max_request' => 3000,
-            'send_yield' => true,
+            'document_root' => Env::get('root_path') . 'public',
+            // 'static_handler_locations' => ['/static', '/upload', '/favicon.ico', '/robots.txt'],
+
+            //心跳检测：每60秒遍历所有连接，强制关闭10分钟内没有向服务器发送任何数据的连接
+            'heartbeat_check_interval' => 60,
+            'heartbeat_idle_time' => 600,
+
+            'package_max_length' => 20 * 1024 * 1024, // 设置最大数据包尺寸
+            'buffer_output_size' => 10 * 1024 * 1024, // 发送输出缓存区内存尺寸
+            'socket_buffer_size' => 128 * 1024 * 1024, // 客户端连接的缓存区长度
+
+            'max_request' => 0,
+            'task_max_request' => 0,
+            // 'send_yield' => true, // 发送数据协程调度
         ],
     ],
     'websocket' => [
-        'host' => '0.0.0.0', // 监听地址
-        'port' => 9502, // 监听端口
-        'sock_type' => SWOOLE_TCP, // sock type 默认为SWOOLE_SOCK_TCP
-        'enabled' => false,
-        'handler' => Handler::class,
-        'parser' => Parser::class,
-        'route_file' => base_path() . 'websocket.php',
+        'enabled' => true,
+        // 'host' => '0.0.0.0', // 监听地址
+        // 'port' => 9502, // 监听端口
+        // 'sock_type' => SWOOLE_TCP, // sock type 默认为SWOOLE_SOCK_TCP
+        'handler' => 'class_name',
+        // 'parser' => Parser::class,
+        // 'route_file' => base_path() . 'websocket.php',
         'ping_interval' => 25000,
         'ping_timeout' => 60000,
     ],
-    'auto_reload' => false,
-    'enable_coroutine' => true,
-    'resetters' => [],
-    'tables' => [],
 ];

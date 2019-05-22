@@ -4,11 +4,19 @@ declare(strict_types=1);
 namespace HZEX\TpSwoole\Swoole;
 
 use Swoole\Http\Request;
+use Swoole\Http\Response;
 use Swoole\WebSocket\Frame;
 use Swoole\WebSocket\Server as WsServer;
 
 interface SwooleWebSocketInterface
 {
+    /**
+     * 连接握手回调（WebSocket）
+     * @param Request  $request
+     * @param Response $response
+     */
+    public function onHandShake(Request $request, Response $response): void;
+
     /**
      * 连接建立回调（WebSocket）
      * @param WsServer $server
@@ -27,6 +35,7 @@ interface SwooleWebSocketInterface
      * 连接关闭回调（WebSocket）
      * @param WsServer        $server
      * @param                 $fd
+     * @param int             $reactorId
      */
-    public function onWsClose(WsServer $server, $fd): void;
+    public function onClose(WsServer $server, $fd, int $reactorId): void;
 }

@@ -6,6 +6,7 @@ namespace HZEX\TpSwoole;
 use HZEX\TpSwoole\Command\ServerCommand;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Runtime;
+use Swoole\Server as Server;
 use Swoole\WebSocket\Server as WebsocketServer;
 use think\App;
 use think\Console;
@@ -16,12 +17,19 @@ class Service
     protected $app;
     /** @var bool  */
     protected $isWebsocket = false;
-    /** @var HttpServer|WebsocketServer */
+    /** @var Server|HttpServer|WebsocketServer */
     protected static $server;
+    /** @var array  */
+    protected static $bindCache = [];
 
     public function __construct(App $app)
     {
         $this->app = $app;
+    }
+
+    public static function getBind()
+    {
+        return self::$bindCache;
     }
 
     public function register()
@@ -29,15 +37,18 @@ class Service
         $this->isWebsocket = $this->app->config->get('swoole.websocket.enabled', false);
         Runtime::enableCoroutine($this->app->config->get('swoole.enable_coroutine', false));
 
-        $this->app->bindTo('swoole.server', function () {
-            if (is_null(static::$server)) {
-                $this->createSwooleServer();
-            }
+        self::$bindCache = [
+            'swoole.server' => function () {
+                if (is_null(static::$server)) {
+                    $this->createSwooleServer();
+                }
+                return static::$server;
+            },
+            'manager' => Manager::class,
+            'event' => Event::class,
+        ];
 
-            return static::$server;
-        });
-        // $this->app->bindTo('swoole.server', ServerFacade::class);
-        $this->app->bindTo('manager', Manager::class);
+        $this->app->bindTo(self::$bindCache);
 
         $this->commands(ServerCommand::class);
     }

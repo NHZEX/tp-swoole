@@ -3,38 +3,35 @@
 namespace HZEX\TpSwoole;
 
 use Closure;
+use Exception;
 use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use HZEX\TpSwoole\Process\Child\FileMonitor;
-use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
 use HZEX\TpSwoole\Swoole\SwooleServerInterface;
 use HZEX\TpSwoole\Tp\Log\Driver\SocketLog;
-use Swoole\Http\Request;
-use Swoole\Http\Response;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Server;
-use Swoole\WebSocket\Frame;
 use Swoole\WebSocket\Server as WsServer;
+use think\App;
+use think\console\Output as ConsoleOutput;
 use think\Container;
+use think\Error;
 use Throwable;
 
-class Manager implements SwooleServerInterface, SwooleServerHttpInterface
+class Manager implements SwooleServerInterface
 {
     use Concerns\MessageSwitchTrait;
 
-    /** @var Container */
-    private $container;
+    /** @var App 服务绑定在App上，不要使用容器替代App*/
+    private $app;
+
+    /** @var Event */
+    private $event;
 
     /** @var HttpServer|WsServer */
     private $swoole;
 
     /** @var array */
     private $config;
-
-    /** @var bool  */
-    protected $isWebsocket = false;
-
-    /** @var bool  */
-    protected $handShakeHandle = false;
 
     /** @var int */
     private $pid;
@@ -55,14 +52,17 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
         'HandShake', 'Open', 'Message' // WebSocket
     ];
 
-    public function __construct()
+    /**
+     * Manager constructor.
+     * @param App $app
+     */
+    public function __construct(App $app)
     {
-        $this->container = Container::getInstance();
+        $this->app = $app;
+        $this->event = $this->app->make(Event::class);
 
         $this->swoole = ServerFacade::instance();
-        $this->config = $this->container->config->pull('swoole');
-
-        $this->isWebsocket = $this->config['websocket']['enabled'] ?? false;
+        $this->config = $this->app->config->pull('swoole');
 
         if ($this->config['auto_reload'] ?? false) {
             $this->initChildProcess[] = (new FileMonitor());
@@ -77,7 +77,15 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
         $this->registerServerEvent();
         $this->mountProcess();
 
-        $this->container->make(Http::class)->registerHandle();
+        /** @var Http $http */
+        $http = $this->app->make(Http::class);
+        $http->registerEvent();
+
+        if ($this->swoole instanceof WsServer) {
+            /** @var WebSocket $websocket */
+            $websocket = $this->app->make(WebSocket::class);
+            $websocket->setHandler($this->config['websocket']['handler'])->registerEvent();
+        }
     }
 
     protected function registerServerEvent()
@@ -91,16 +99,6 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
         $this->swoole->on('Finish', Closure::fromCallable([$this, 'onFinish']));
 
         $this->swoole->on('Close', Closure::fromCallable([$this, 'onClose']));
-
-        $this->swoole->on('Request', Closure::fromCallable([$this, 'onRequest']));
-
-        if ($this->isWebsocket) {
-            $this->swoole->on('Open', Closure::fromCallable([$this, 'onOpen']));
-            $this->swoole->on('Message', Closure::fromCallable([$this, 'onMessage']));
-        }
-        if ($this->isWebsocket && $this->handShakeHandle) {
-            $this->swoole->on('HandShake', Closure::fromCallable([$this, 'onHandShake']));
-        }
     }
 
     /**
@@ -114,6 +112,14 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
             $swoole = ServerFacade::instance();
         }
         return $swoole;
+    }
+
+    /**
+     * @return Event
+     */
+    public function getEvent(): Event
+    {
+        return $this->event;
     }
 
     /**
@@ -181,7 +187,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
         // 设置当前工人Id
         $this->workerId = $workerId;
         // 事件触发
-        $this->container->hook->listen('swoole.' . __FUNCTION__, func_get_args());
+        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -192,7 +198,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     public function onWorkerStop($server, int $workerId): void
     {
         // 事件触发
-        $this->container->hook->listen('swoole.' . __FUNCTION__, func_get_args());
+        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -207,7 +213,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     {
         echo "WorkerError: $workerId, pid: $workerPid, execCode: $exitCode, signal: $signal\n";
         // 事件触发
-        $this->container->hook->listen('swoole.' . __FUNCTION__, func_get_args());
+        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -222,74 +228,15 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     }
 
     /**
-     * 请求到达回调（Http）
-     * @param Request  $request
-     * @param Response $response
-     * @throws Throwable
-     */
-    public function onRequest(Request $request, Response $response): void
-    {
-        // 事件触发
-        $this->container->hook->listen('swoole.' . __FUNCTION__, func_get_args());
-    }
-
-    /**
-     * 自定义握手
-     * @param Request  $request
-     * @param Response $response
-     */
-    protected function onHandShake(Request $request, Response $response)
-    {
-    }
-
-    /**
-     * 连接建立回调（WebSocket）
-     * @param WsServer $server
-     * @param Request         $request
-     */
-    protected function onOpen(WsServer $server, Request $request)
-    {
-        $server->push($request->fd, '{"type": "msg", "code":1600}');
-        echo "join#{$request->fd}\n";
-    }
-
-    /**
-     * 消息到达回调（WebSocket）
-     * @param WsServer $server
-     * @param Frame           $frame
-     */
-    protected function onMessage(WsServer $server, Frame $frame)
-    {
-        $uid = $server->getClientInfo($frame->fd)['uid'] ?? -1;
-        if (-1 === $uid && is_numeric($frame->data)) {
-            $server->bind($frame->fd, (int) $frame->data);
-        }
-        echo "accept#{$frame->fd}: " . substr($frame->data, 0, 16) . '...' . PHP_EOL;
-        $server->push($frame->fd, "Reply#{$frame->fd}#{$uid}: {$frame->data}");
-    }
-
-    /**
-     * 连接关闭回调
+     * 连接关闭回调（Tcp）
      * @param Server|HttpServer|WsServer $server
      * @param int                        $fd
      * @param int                        $reactorId
      */
     protected function onClose($server, int $fd, int $reactorId)
     {
-        if ($this->isWebsocket && $server->isEstablished($fd)) {
-            $this->onWsClose($server, $fd, $reactorId);
-        }
-    }
-
-    /**
-     * 连接关闭回调（WebSocket）
-     * @param WsServer $server
-     * @param int             $fd
-     * @param int             $reactorId
-     */
-    protected function onWsClose(WsServer $server, int $fd, int $reactorId)
-    {
-        echo "disconnect#{$fd}: {$reactorId}\n";
+        // 事件触发
+        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -307,6 +254,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 
         if (is_array($data)) {
             if (SocketLog::class === $data['action']) {
+                // TODO 等待 swoole 修复发布
 //                $chan = new Coroutine\Channel(1);
 //                go(function () use ($data, $chan) {
 //                    $cli = new Client($data['host'], $data['port']);
@@ -337,6 +285,24 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     protected function onFinish($server, int $taskId, string $data)
     {
+    }
+
+    /**
+     * Log server error.
+     *
+     * @param Throwable|Exception $e
+     */
+    public static function logServerError(Throwable $e)
+    {
+        if ($e instanceof \Error || $e instanceof Throwable) {
+            echo $e->__toString();
+            return;
+        }
+        try {
+            Error::getExceptionHandler()->renderForConsole(new ConsoleOutput, $e);
+        } catch (Throwable $exception) {
+            echo $exception->__toString();
+        }
     }
 
     /**

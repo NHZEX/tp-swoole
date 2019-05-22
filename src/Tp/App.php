@@ -3,6 +3,8 @@
 namespace HZEX\TpSwoole\Tp;
 
 use Exception;
+use HZEX\TpSwoole\Event;
+use HZEX\TpSwoole\Service;
 use Swoole\Http\Request;
 use think\Db;
 use think\Error;
@@ -14,9 +16,26 @@ use Throwable;
  * Class App
  * @package app\Swoole\Tp
  * @property Cookie $cookie
+ * @property Event  $event
  */
 class App extends \think\App
 {
+    public function __construct($appPath = '')
+    {
+        $that = self::getInstance();
+        // 尝试获取应用路径
+        if ($that->exists(\think\App::class)) {
+            $appPath = $that->getAppPath();
+        }
+
+        // 尝试恢复服务绑定
+        if ($that->exists(Service::class)) {
+            $this->bind = array_merge($this->bind, Service::getBind());
+        }
+
+        parent::__construct($appPath);
+    }
+
     /**
      * App 值重设
      */
