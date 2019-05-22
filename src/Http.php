@@ -48,6 +48,32 @@ class Http implements SwooleServerHttpInterface
     }
 
     /**
+     * 工作进程启动（Worker/Task）
+     * @param HttpServer|Server|WsServer $server
+     * @param int                        $workerId
+     */
+    protected function onStart($server, int $workerId): void
+    {
+        if ($server->taskworker) {
+            return;
+        }
+        $this->initApp();
+    }
+
+    /**
+     * 工作进程异常（Worker/Task）
+     * @param HttpServer $server
+     * @param int        $workerId
+     * @param int        $workerPid
+     * @param int        $exitCode
+     * @param int        $signal
+     */
+    protected function onError(HttpServer $server, int $workerId, int $workerPid, int $exitCode, int $signal): void
+    {
+        $this->appShutdown();
+    }
+
+    /**
      *
      */
     private function initApp()
@@ -81,32 +107,6 @@ class Http implements SwooleServerHttpInterface
             'cookie' => Cookie::class,
             'session' => Session::class,
         ]);
-    }
-
-    /**
-     * 工作进程启动（Worker/Task）
-     * @param HttpServer|Server|WsServer $server
-     * @param int                        $workerId
-     */
-    protected function onStart($server, int $workerId): void
-    {
-        if ($server->taskworker) {
-            return;
-        }
-        $this->initApp();
-    }
-
-    /**
-     * 工作进程异常（Worker/Task）
-     * @param HttpServer $server
-     * @param int        $workerId
-     * @param int        $workerPid
-     * @param int        $exitCode
-     * @param int        $signal
-     */
-    protected function onError(HttpServer $server, int $workerId, int $workerPid, int $exitCode, int $signal): void
-    {
-        $this->appShutdown();
     }
 
     /**
@@ -166,7 +166,15 @@ class Http implements SwooleServerHttpInterface
         foreach ($app->cookie->getCookie() as $name => $val) {
             list($value, $expire, $option) = $val;
 
-            $swooleResponse->cookie($name, $value, $expire, $option['path'], $option['domain'], $option['secure'] ? true : false, $option['httponly'] ? true : false);
+            $swooleResponse->cookie(
+                $name,
+                $value,
+                $expire,
+                $option['path'],
+                $option['domain'],
+                $option['secure'] ? true : false,
+                $option['httponly'] ? true : false
+            );
         }
 
         // 发送状态码
