@@ -96,7 +96,8 @@ if (!function_exists('debug_container_bind')) {
 
             foreach ($bind as $key => &$value) {
                 if ($value instanceof Closure) {
-                    $value = '\Closure => ' . ($instances[$key] ?? 'null');
+                    $tmp = $instances[$key] ?? 'null';
+                    $value = '\Closure => ' . (is_string($tmp) ? $tmp : print_r($tmp, true));
                 } elseif (is_string($value)) {
                     $value = "$value => " . ($instances[$value] ?? 'null');
                 } else {
