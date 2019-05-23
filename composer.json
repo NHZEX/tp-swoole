@@ -1,6 +1,7 @@
 {
     "name": "nhzex/tp-swoole",
     "type": "library",
+    "license": "Apache-2.0",
     "description": "",
     "authors": [
         {
@@ -23,7 +24,10 @@
     "autoload": {
         "psr-4": {
             "HZEX\\TpSwoole\\": "src"
-        }
+        },
+        "files": [
+            "src/bootstart.php"
+        ]
     },
     "config": {
         "preferred-install": "dist",
