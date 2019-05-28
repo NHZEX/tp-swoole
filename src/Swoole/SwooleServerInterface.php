@@ -3,9 +3,8 @@ declare(strict_types=1);
 
 namespace HZEX\TpSwoole\Swoole;
 
-
-use Swoole\Server;
 use Swoole\Http\Server as HttpServer;
+use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
 
 interface SwooleServerInterface

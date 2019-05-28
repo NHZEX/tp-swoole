@@ -25,16 +25,28 @@ use think\facade\Cookie as CookieFacade;
 use think\facade\Session as SessionFacade;
 use Throwable;
 
-class Http implements SwooleServerHttpInterface
+class Http implements SwooleServerHttpInterface, EventSubscribeInterface
 {
-    /** @var App */
+    /**
+     * @var App
+     */
     protected $app;
-    /** @var bool */
+    /**
+     * @var bool
+     */
     private $isRegistered = false;
 
     public function __construct(App $app)
     {
         $this->app = $app;
+    }
+
+    public function subscribe(Event $event): void
+    {
+        // 监听公共事件
+        $event->listen('swoole.onWorkerStart', Closure::fromCallable([$this, 'onStart']));
+        $event->listen('swoole.onWorkerError', Closure::fromCallable([$this, 'onError']));
+        $event->listen('swoole.onRequest', Closure::fromCallable([$this, 'onRequest']));
     }
 
     public function registerEvent()
@@ -43,17 +55,6 @@ class Http implements SwooleServerHttpInterface
             return;
         }
         $this->isRegistered = true;
-
-        // 监听公共事件
-        \HZEX\TpSwoole\Facade\Event::listen('swoole.onWorkerStart', Closure::fromCallable([$this, 'onStart']));
-        \HZEX\TpSwoole\Facade\Event::listen('swoole.onWorkerError', Closure::fromCallable([$this, 'onError']));
-//        $this->app->event->listen();
-//        $this->app->event->listen();
-
-        // 监听私有事件
-        /** @var WsServer $swoole */
-        $swoole = \HZEX\TpSwoole\Facade\Server::instance();
-        $swoole->on('Request', Closure::fromCallable([$this, 'onRequest']));
     }
 
     /**
@@ -118,7 +119,6 @@ class Http implements SwooleServerHttpInterface
         ]);
         // 应用初始化
         $this->app->initialize();
-
     }
 
     /**

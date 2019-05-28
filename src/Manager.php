@@ -6,9 +6,14 @@ use Closure;
 use Exception;
 use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use HZEX\TpSwoole\Process\Child\FileMonitor;
+use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
 use HZEX\TpSwoole\Swoole\SwooleServerInterface;
 use HZEX\TpSwoole\Tp\Log\Driver\SocketLog;
+use Swoole\Http\Request;
+use Swoole\Http\Response;
 use Swoole\Http\Server as HttpServer;
+use Swoole\Http2\Request as H2Request;
+use Swoole\Http2\Response as H2Response;
 use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
 use think\App;
@@ -17,11 +22,11 @@ use think\Container;
 use think\Error;
 use Throwable;
 
-class Manager implements SwooleServerInterface
+class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 {
     use Concerns\MessageSwitchTrait;
 
-    /** @var App 服务绑定在App上，不要使用容器替代App*/
+    /** @var App 服务绑定在App上，不要使用容器替代App */
     private $app;
 
     /** @var Event */
@@ -32,9 +37,6 @@ class Manager implements SwooleServerInterface
 
     /** @var array */
     private $config;
-
-    /** @var int */
-    private $pid;
 
     /** @var */
     private $workerId;
@@ -86,19 +88,35 @@ class Manager implements SwooleServerInterface
             $websocket = $this->app->make(WebSocket::class);
             $websocket->setHandler($this->config['websocket']['handler'])->registerEvent();
         }
+
+        \HZEX\TpSwoole\Facade\Event::subscribe([
+            Http::class,
+            WebSocket::class,
+        ]);
     }
 
     protected function registerServerEvent()
     {
-        $this->swoole->on('Start', Closure::fromCallable([$this, 'onStart']));
-        $this->swoole->on('ManagerStart', Closure::fromCallable([$this, 'onManagerStart']));
-        $this->swoole->on('WorkerStart', Closure::fromCallable([$this, 'onWorkerStart']));
-        $this->swoole->on('WorkerError', Closure::fromCallable([$this, 'onWorkerError']));
+        // Http
+        if ($this->swoole instanceof HttpServer) {
+            $this->events[] = 'Request';
+        }
+        // WebSocket
+        if ($this->swoole instanceof WsServer) {
+            // $this->events[] = 'HandShake';
+            $this->events[] = 'Open';
+            $this->events[] = 'Message';
+        }
 
-        $this->swoole->on('Task', Closure::fromCallable([$this, 'onTask']));
-        $this->swoole->on('Finish', Closure::fromCallable([$this, 'onFinish']));
-
-        $this->swoole->on('Close', Closure::fromCallable([$this, 'onClose']));
+        foreach ($this->events as $event) {
+            $listener = "on$event";
+            $callback = method_exists($this, $listener)
+                ? Closure::fromCallable([$this, $listener])
+                : function () use ($listener) {
+                    $this->event->trigger("swoole.$listener", func_get_args());
+                };
+            $this->swoole->on($event, $callback);
+        }
     }
 
     /**
@@ -145,7 +163,8 @@ class Manager implements SwooleServerInterface
     public function onStart($server): void
     {
         swoole_set_process_name('php-ps: master');
-        $this->pid = $server->master_pid;
+        // 事件触发
+        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -155,6 +174,8 @@ class Manager implements SwooleServerInterface
     public function onShutdown($server): void
     {
         unlink($this->swoole->setting['pid_file']);
+        // 事件触发
+        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -164,6 +185,8 @@ class Manager implements SwooleServerInterface
     public function onManagerStart($server): void
     {
         swoole_set_process_name('php-ps: manager');
+        // 事件触发
+        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -172,7 +195,8 @@ class Manager implements SwooleServerInterface
      */
     public function onManagerStop($server): void
     {
-        // TODO: Implement onManagerStop() method.
+        // 事件触发
+        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -224,7 +248,8 @@ class Manager implements SwooleServerInterface
      */
     public function onPipeMessage($server, int $srcWorkerId, $message): void
     {
-        // TODO: Implement onPipeMessage() method.
+        // 事件触发
+        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -240,15 +265,27 @@ class Manager implements SwooleServerInterface
     }
 
     /**
+     * 请求到达回调（Http）
+     * @param Request|H2Request   $request
+     * @param Response|H2Response $response
+     */
+    public function onRequest(Request $request, Response $response): void
+    {
+        // 事件触发
+        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
+    }
+
+    /**
      * 任务处理回调
      * @param WsServer $server
      * @param int      $task_id
      * @param int      $src_worker_id
-     * @param        $data
+     * @param          $data
      * @return null
      */
     protected function onTask(WsServer $server, int $task_id, int $src_worker_id, $data)
     {
+        // TODO 等待新版
         // $tasl = new Task();
         $result = null;
 
@@ -280,11 +317,12 @@ class Manager implements SwooleServerInterface
     /**
      * 任务完成响应
      * @param HttpServer|WsServer $server
-     * @param int      $taskId
-     * @param string   $data
+     * @param int                 $taskId
+     * @param string              $data
      */
     protected function onFinish($server, int $taskId, string $data)
     {
+        // 未触发事件
     }
 
     /**

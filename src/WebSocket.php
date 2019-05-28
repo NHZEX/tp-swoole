@@ -14,7 +14,7 @@ use Swoole\WebSocket\Server as WsServer;
 use think\App;
 use Throwable;
 
-class WebSocket implements SwooleWebSocketInterface
+class WebSocket implements SwooleWebSocketInterface, EventSubscribeInterface
 {
     /** @var App */
     private $app;
@@ -28,6 +28,11 @@ class WebSocket implements SwooleWebSocketInterface
     public function __construct(App $app)
     {
         $this->app = $app;
+    }
+
+    public function subscribe(Event $event): void
+    {
+        // TODO: Implement subscribe() method.
     }
 
     public function setHandler(string $class)
@@ -54,8 +59,7 @@ class WebSocket implements SwooleWebSocketInterface
 
         // 监听公共事件
         $event = $this->app->make(Event::class);
-        $event->listen('swoole.onClose', function (WsServer $server, $fd, int $reactorId): void
-        {
+        $event->listen('swoole.onClose', function (WsServer $server, $fd, int $reactorId): void {
             if ($server->isEstablished($fd)) {
                 $this->onClose($server, $fd, $reactorId);
             }
