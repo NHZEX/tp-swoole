@@ -10,6 +10,7 @@ use Swoole\Server as Server;
 use Swoole\WebSocket\Server as WebsocketServer;
 use think\App;
 use think\Console;
+use think\Container;
 
 class Service
 {
@@ -49,6 +50,8 @@ class Service
         ];
 
         $this->app->bindTo(self::$bindCache);
+
+        $this->app->instance(Container::class, $this->app); // 统一容器与App对象实例
 
         $this->commands(ServerCommand::class);
     }
