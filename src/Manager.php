@@ -8,7 +8,8 @@ use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use HZEX\TpSwoole\Process\Child\FileMonitor;
 use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
 use HZEX\TpSwoole\Swoole\SwooleServerInterface;
-use HZEX\TpSwoole\Tp\Log\Driver\SocketLog;
+use HZEX\TpSwoole\Worker\Http;
+use HZEX\TpSwoole\Worker\WebSocket;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Http\Server as HttpServer;
@@ -17,9 +18,7 @@ use Swoole\Http2\Response as H2Response;
 use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
 use think\App;
-use think\console\Output as ConsoleOutput;
 use think\Container;
-use think\Error;
 use Throwable;
 
 class Manager implements SwooleServerInterface, SwooleServerHttpInterface
@@ -28,9 +27,6 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 
     /** @var App 服务绑定在App上，不要使用容器替代App */
     private $app;
-
-    /** @var Event */
-    private $event;
 
     /** @var HttpServer|WsServer */
     private $swoole;
@@ -61,22 +57,20 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     public function __construct(App $app)
     {
         $this->app = $app;
-        $this->event = $this->app->make(Event::class);
 
         $this->swoole = ServerFacade::instance();
-        $this->config = $this->app->config->pull('swoole');
-
-        if ($this->config['auto_reload'] ?? false) {
-            $this->initChildProcess[] = (new FileMonitor());
-        }
-
-        $this->initialize();
+        $this->config = $this->app->config->get('swoole');
     }
 
-    protected function initialize()
+    public function initialize()
     {
         $this->initMessageSwitch();
         $this->registerServerEvent();
+
+        if ($this->config['auto_reload'] ?? false) {
+            $this->initChildProcess[] = $this->app->make(FileMonitor::class);
+        }
+
         $this->mountProcess();
 
         /** @var Http $http */
@@ -113,7 +107,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
             $callback = method_exists($this, $listener)
                 ? Closure::fromCallable([$this, $listener])
                 : function () use ($listener) {
-                    $this->event->trigger("swoole.$listener", func_get_args());
+                    $this->getEvent()->trigger("swoole.$listener", func_get_args());
                 };
             $this->swoole->on($event, $callback);
         }
@@ -137,7 +131,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     public function getEvent(): Event
     {
-        return $this->event;
+        return $this->app->make(App::class)->make(Event::class);
     }
 
     /**
@@ -164,7 +158,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     {
         swoole_set_process_name('php-ps: master');
         // 事件触发
-        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -175,7 +169,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     {
         unlink($this->swoole->setting['pid_file']);
         // 事件触发
-        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -186,7 +180,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     {
         swoole_set_process_name('php-ps: manager');
         // 事件触发
-        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -196,7 +190,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     public function onManagerStop($server): void
     {
         // 事件触发
-        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -207,11 +201,12 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     public function onWorkerStart($server, int $workerId): void
     {
         $type = $server->taskworker ? 'task' : 'worker';
+        echo "{$type}\t#{$workerId}({$server->worker_pid})\n";
         swoole_set_process_name("php-ps: {$type}#{$workerId}");
         // 设置当前工人Id
         $this->workerId = $workerId;
         // 事件触发
-        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -222,7 +217,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     public function onWorkerStop($server, int $workerId): void
     {
         // 事件触发
-        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -237,7 +232,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     {
         echo "WorkerError: $workerId, pid: $workerPid, execCode: $exitCode, signal: $signal\n";
         // 事件触发
-        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -249,7 +244,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     public function onPipeMessage($server, int $srcWorkerId, $message): void
     {
         // 事件触发
-        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -261,7 +256,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     protected function onClose($server, int $fd, int $reactorId)
     {
         // 事件触发
-        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -272,7 +267,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
     public function onRequest(Request $request, Response $response): void
     {
         // 事件触发
-        $this->event->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
 
     /**
@@ -285,14 +280,11 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     protected function onTask(WsServer $server, int $task_id, int $src_worker_id, $data)
     {
-        // TODO 等待新版
-        // $tasl = new Task();
         $result = null;
-
-        if (is_array($data)) {
-            if (SocketLog::class === $data['action']) {
-                // TODO 等待 swoole 修复发布
-//                $chan = new Coroutine\Channel(1);
+//        if (is_array($data)) {
+//            if (SocketLog::class === $data['action']) {
+//                // TODO 等待 swoole 修复发布
+//                $chan = new \Coroutine\Channel(1);
 //                go(function () use ($data, $chan) {
 //                    $cli = new Client($data['host'], $data['port']);
 //                    $cli->setMethod('POST');
@@ -307,10 +299,10 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 //                    $chan->push($cli->statusCode);
 //                });
 //                $result = $chan->pop();
-            }
-        }
-        //完成任务，结束并返回数据
-        // $task->finish($result);
+//            }
+//        }
+//        //完成任务，结束并返回数据
+//        $task->finish($result);
         return $result;
     }
 
@@ -332,15 +324,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      */
     public static function logServerError(Throwable $e)
     {
-        if ($e instanceof \Error || $e instanceof Throwable) {
-            echo $e->__toString();
-            return;
-        }
-        try {
-            Error::getExceptionHandler()->renderForConsole(new ConsoleOutput, $e);
-        } catch (Throwable $exception) {
-            echo $exception->__toString();
-        }
+        echo $e->__toString();
     }
 
     /**
@@ -356,7 +340,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
             } else {
                 return $val;
             }
-        }, $container->all());
+        }, (array) $container->getIterator());
         ksort($debug, SORT_STRING); // SORT_FLAG_CASE
         $container->log->debug($debug);
     }

@@ -1,10 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace HZEX\TpSwoole;
+namespace HZEX\TpSwoole\Worker;
 
 use Closure;
+use HZEX\TpSwoole\Event;
+use HZEX\TpSwoole\EventSubscribeInterface;
 use HZEX\TpSwoole\Facade\Server;
+use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\Swoole\SwooleWebSocketInterface;
 use HZEX\TpSwoole\WebSocket\HandlerContract;
 use Swoole\Http\Request;

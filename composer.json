@@ -12,10 +12,15 @@
     "minimum-stability": "stable",
     "require": {
         "php": "~7.2.10",
-        "ext-swoole": "^4.3.2",
         "ext-json": "*",
         "ext-pcntl": "*",
-        "topthink/framework": "^5.1.35"
+        "ext-pdo": "*",
+        "ext-swoole": "^4.3.2",
+        "ext-curl": "*",
+        "ext-sockets": "*",
+        "open-smf/connection-pool": "~1.0",
+        "topthink/framework": "6.0.x-dev",
+        "topthink/think-helper": "^3.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^8",
@@ -26,8 +31,18 @@
             "HZEX\\TpSwoole\\": "src"
         },
         "files": [
-            "src/bootstart.php"
+            "src/helpers.php"
         ]
+    },
+    "extra": {
+        "think": {
+            "services": [
+                "HZEX\\TpSwoole\\Service"
+            ],
+            "config": {
+                "swoole": "src/Config/swoole.php"
+            }
+        }
     },
     "config": {
         "preferred-install": "dist",

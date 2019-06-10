@@ -9,7 +9,7 @@ use RecursiveIteratorIterator;
 use SplFileInfo;
 use Swoole\Coroutine;
 use Swoole\Process;
-use think\facade\Env;
+use think\facade\App;
 
 class FileMonitor extends ChildProcess
 {
@@ -20,8 +20,8 @@ class FileMonitor extends ChildProcess
 
     protected function init()
     {
-        $rootPath = Env::get('ROOT_PATH');
-        $this->path = [$rootPath . 'application', $rootPath . 'config', $rootPath . 'extend'];
+        $rootPath = App::getRootPath();
+        $this->path = [$rootPath . 'app', $rootPath . 'config', $rootPath . 'vendor'];
     }
 
     /**

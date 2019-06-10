@@ -4,13 +4,16 @@ declare(strict_types=1);
 namespace HZEX\TpSwoole\Process;
 
 use Closure;
-use HZEX\TpSwoole\Facade\Manager;
+use HZEX\TpSwoole\Manager;
 use Swoole\Coroutine;
 use Swoole\Http\Server;
 use Swoole\Process;
+use think\App;
 
 abstract class ChildProcess implements ChildProcessInterface
 {
+    /** @var App */
+    protected $app;
     /** @var Manager */
     protected $manager;
     /** @var Server|\Swoole\Server|\Swoole\WebSocket\Server  */
@@ -30,8 +33,10 @@ abstract class ChildProcess implements ChildProcessInterface
         return static::class;
     }
 
-    public function __construct()
+    public function __construct(App $app, Manager $manager)
     {
+        $this->app = $app;
+        $this->manager = $manager;
         $this->init();
     }
 
@@ -72,7 +77,6 @@ abstract class ChildProcess implements ChildProcessInterface
     {
         // 初始化子进程
         $process->name('php-ps: ' . static::class);
-        $this->manager = Manager::instance();
         $this->swoole = $this->manager->getSwoole();
 
         // 监控主进程存活

@@ -11,49 +11,49 @@
 
 namespace HZEX\TpSwoole\Tp\Log\Driver;
 
-use Exception;
-use Swoole\Client;
-use Swoole\Http\Server;
 use think\App;
-use think\exception\ClassNotFoundException;
+use think\contract\LogHandlerInterface;
 
 /**
  * github: https://github.com/luofei614/SocketLog
  * @author luofei614<weibo.com/luofei614>
  */
-class SocketLog
+class SocketLog implements LogHandlerInterface
 {
+    protected $app;
+
     public $port = 1116; //SocketLog 服务的http的端口号
 
     protected $config = [
         // socket服务器地址
-        'host' => 'localhost',
+        'host'                => 'localhost',
         // 是否显示加载的文件列表
         'show_included_files' => false,
         // 日志强制记录到配置的client_id
-        'force_client_ids' => [],
+        'force_client_ids'    => [],
         // 限制允许读取日志的client_id
-        'allow_client_ids' => [],
+        'allow_client_ids'    => [],
         //输出到浏览器默认展开的日志级别
-        'expand_level' => ['debug'],
+        'expand_level'        => ['debug'],
     ];
 
     protected $css = [
-        'sql' => 'color:#009bb4;',
+        'sql'      => 'color:#009bb4;',
         'sql_warn' => 'color:#009bb4;font-size:14px;',
-        'error' => 'color:#f4006b;font-size:14px;',
-        'page' => 'color:#40e2ff;background:#171717;',
-        'big' => 'font-size:20px;color:red;',
+        'error'    => 'color:#f4006b;font-size:14px;',
+        'page'     => 'color:#40e2ff;background:#171717;',
+        'big'      => 'font-size:20px;color:red;',
     ];
 
     protected $allowForceClientIds = []; //配置强制推送且被授权的client_id
-    protected $app;
+
+    protected $clientArg = [];
 
     /**
      * 架构函数
      * @access public
-     * @param App   $app
-     * @param array $config 缓存参数
+     * @param  App   $app  应用对象
+     * @param  array $config 缓存参数
      */
     public function __construct(App $app, array $config = [])
     {
@@ -67,10 +67,10 @@ class SocketLog
     /**
      * 调试输出接口
      * @access public
-     * @param array $log 日志信息
+     * @param  array     $log 日志信息
      * @return bool
      */
-    public function save(array $log = [], $append = false)
+    public function save(array $log): bool
     {
         if (!$this->check()) {
             return false;
@@ -79,37 +79,32 @@ class SocketLog
         $trace = [];
 
         if ($this->app->isDebug()) {
-            $runtime = round(microtime(true) - $this->app->getBeginTime(), 10);
-            $reqs = $runtime > 0 ? number_format(1 / $runtime, 2) : '∞';
-            $time_str = ' [运行时间：' . number_format($runtime, 6) . 's][吞吐率：' . $reqs . 'req/s]';
-            $memory_use = (memory_get_usage() - $this->app->getBeginMem()) / 1024;
-            if ($memory_use > 2046) {
-                $memory_use = number_format($memory_use / 1024, 2) . 'mb';
-            } else {
-                $memory_use = number_format($memory_use, 2) . 'kb';
-            }
-            $memory_str = ' [内存消耗：' . $memory_use . ']';
-            $file_load = ' [文件加载：' . count(get_included_files()) . ']';
+            $runtime    = round(microtime(true) - $this->app->getBeginTime(), 10);
+            $reqs       = $runtime > 0 ? number_format(1 / $runtime, 2) : '∞';
+            $time_str   = ' [运行时间：' . number_format($runtime, 6) . 's][吞吐率：' . $reqs . 'req/s]';
+            $memory_use = number_format((memory_get_usage() - $this->app->getBeginMem()) / 1024, 2);
+            $memory_str = ' [内存消耗：' . $memory_use . 'kb]';
+            $file_load  = ' [文件加载：' . count(get_included_files()) . ']';
 
-            if (isset($_SERVER['HTTP_HOST'])) {
-                $current_uri = $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+            if ($this->app->exists('request')) {
+                $current_uri = $this->app->request->host(). $this->app->request->baseUrl();
             } else {
-                $current_uri = 'cmd:' . $this->app->request->url();
+                $current_uri = 'cmd:' . implode(' ', $_SERVER['argv'] ?? ['unknown']);
             }
 
             // 基本信息
             $trace[] = [
                 'type' => 'group',
-                'msg' => $current_uri . $time_str . $memory_str . $file_load,
-                'css' => $this->css['page'],
+                'msg'  => $current_uri . $time_str . $memory_str . $file_load,
+                'css'  => $this->css['page'],
             ];
         }
 
         foreach ($log as $type => $val) {
             $trace[] = [
                 'type' => in_array($type, $this->config['expand_level']) ? 'group' : 'groupCollapsed',
-                'msg' => '[ ' . $type . ' ]',
-                'css' => isset($this->css[$type]) ? $this->css[$type] : '',
+                'msg'  => '[ ' . $type . ' ]',
+                'css'  => $this->css[$type] ?? '',
             ];
 
             foreach ($val as $msg) {
@@ -118,42 +113,42 @@ class SocketLog
                 }
                 $trace[] = [
                     'type' => 'log',
-                    'msg' => $msg,
-                    'css' => '',
+                    'msg'  => $msg,
+                    'css'  => '',
                 ];
             }
 
             $trace[] = [
                 'type' => 'groupEnd',
-                'msg' => '',
-                'css' => '',
+                'msg'  => '',
+                'css'  => '',
             ];
         }
 
         if ($this->config['show_included_files']) {
             $trace[] = [
                 'type' => 'groupCollapsed',
-                'msg' => '[ file ]',
-                'css' => '',
+                'msg'  => '[ file ]',
+                'css'  => '',
             ];
 
             $trace[] = [
                 'type' => 'log',
-                'msg' => implode("\n", get_included_files()),
-                'css' => '',
+                'msg'  => implode("\n", get_included_files()),
+                'css'  => '',
             ];
 
             $trace[] = [
                 'type' => 'groupEnd',
-                'msg' => '',
-                'css' => '',
+                'msg'  => '',
+                'css'  => '',
             ];
         }
 
         $trace[] = [
             'type' => 'groupEnd',
-            'msg' => '',
-            'css' => '',
+            'msg'  => '',
+            'css'  => '',
         ];
 
         $tabid = $this->getClientArg('tabid');
@@ -178,22 +173,22 @@ class SocketLog
     /**
      * 发送给指定客户端
      * @access protected
+     * @author Zjmainstay
      * @param  $tabid
      * @param  $client_id
      * @param  $logs
      * @param  $force_client_id
-     * @author Zjmainstay
      */
     protected function sendToClient($tabid, $client_id, $logs, $force_client_id)
     {
         $logs = [
-            'tabid' => $tabid,
-            'client_id' => $client_id,
-            'logs' => $logs,
+            'tabid'           => $tabid,
+            'client_id'       => $client_id,
+            'logs'            => $logs,
             'force_client_id' => $force_client_id,
         ];
 
-        $msg = @json_encode($logs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR);
+        $msg     = json_encode($logs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR);
         $address = '/' . $client_id; //将client_id作为地址， server端通过地址判断将日志发布给谁
 
         $this->send($this->config['host'], $msg, $address);
@@ -231,31 +226,28 @@ class SocketLog
 
     protected function getClientArg($name)
     {
-        static $args = [];
-
         $key = 'HTTP_USER_AGENT';
-
-        if (isset($_SERVER['HTTP_SOCKETLOG'])) {
+        if (empty($this->app->request->server('HTTP_SOCKETLOG', ''))) {
             $key = 'HTTP_SOCKETLOG';
         }
 
-        if (!isset($_SERVER[$key])) {
-            return null;
+        if (empty($socketLog = $this->app->request->server($key))) {
+            return [];
         }
 
-        if (empty($args)) {
-            if (!preg_match('/SocketLog\((.*?)\)/', $_SERVER[$key], $match)) {
-                $args = ['tabid' => null];
-                return null;
+        if (empty($this->clientArg)) {
+            if (!preg_match('/SocketLog\((.*?)\)/', $socketLog, $match)) {
+                $this->clientArg = ['tabid' => null];
+                return [];
             }
-            parse_str($match[1], $args);
+            parse_str($match[1] ?? '', $this->clientArg);
         }
 
-        if (isset($args[$name])) {
-            return $args[$name];
+        if (isset($this->clientArg[$name])) {
+            return $this->clientArg[$name];
         }
 
-        return null;
+        return [];
     }
 
     /**

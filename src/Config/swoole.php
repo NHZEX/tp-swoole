@@ -39,7 +39,8 @@ return [
 
             'max_request' => 0,
             'task_max_request' => 0,
-            // 'send_yield' => true, // 发送数据协程调度
+            'reload_async' => true, // 异步安全重启
+            'send_yield' => true, // 发送数据协程调度
         ],
     ],
     'websocket' => [

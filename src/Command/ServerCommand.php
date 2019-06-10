@@ -13,7 +13,6 @@ namespace HZEX\TpSwoole\Command;
 
 use HZEX\TpSwoole\Manager;
 use Swoole\Process;
-use think\App;
 use think\console\Command;
 use think\console\Input;
 use think\console\input\Argument;
@@ -98,14 +97,7 @@ class ServerCommand extends Command
     protected function init()
     {
         $this->output->info("--------------------------- INIT --------------------------------");
-        $this->config = Config::pull('swoole');
-
-        // 开启守护进程模式
-        if ($this->input->hasOption('daemon')) {
-            $conf = Config::get('swoole.server.options', []);
-            $conf['daemonize'] = true;
-            Config::set('swoole.server.options', $conf);
-        }
+        $this->config = Config::get('swoole');
     }
 
     /**
@@ -134,9 +126,10 @@ class ServerCommand extends Command
 
         $host = $this->config['server']['host'];
         $port = $this->config['server']['port'];
-
+        
         /** @var Manager $server */
-        $server = App::getInstance()->make(Manager::class);
+        $server = $this->app->make(Manager::class);
+        $server->initialize();
 
         $this->output->writeln("Swoole Http && Websocket started: <{$host}:{$port}>");
         $this->output->writeln('You can exit with <info>`CTRL-C`</info>');
