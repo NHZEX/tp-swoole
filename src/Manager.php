@@ -8,8 +8,10 @@ use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use HZEX\TpSwoole\Process\Child\FileMonitor;
 use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
 use HZEX\TpSwoole\Swoole\SwooleServerInterface;
+use HZEX\TpSwoole\Tp\Log\Driver\SocketLog;
 use HZEX\TpSwoole\Worker\Http;
 use HZEX\TpSwoole\Worker\WebSocket;
+use Swoole\Coroutine\Http\Client;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Http\Server as HttpServer;
@@ -272,38 +274,29 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 
     /**
      * 任务处理回调
-     * @param WsServer $server
-     * @param int      $task_id
-     * @param int      $src_worker_id
-     * @param          $data
-     * @return null
+     * @param Server $server
+     * @param Task   $task
      */
-    protected function onTask(WsServer $server, int $task_id, int $src_worker_id, $data)
+    protected function onTask(Server $server, Server\Task $task)
     {
         $result = null;
-//        if (is_array($data)) {
-//            if (SocketLog::class === $data['action']) {
-//                // TODO 等待 swoole 修复发布
-//                $chan = new \Coroutine\Channel(1);
-//                go(function () use ($data, $chan) {
-//                    $cli = new Client($data['host'], $data['port']);
-//                    $cli->setMethod('POST');
-//                    $cli->setHeaders([
-//                        'Host' => $data['host'],
-//                        'Content-Type' => 'application/json;charset=UTF-8',
-//                        'Accept' => 'text/html,application/xhtml+xml,application/xml',
-//                        'Accept-Encoding' => 'gzip',
-//                    ]);
-//                    $cli->set(['timeout' => 3, 'keep_alive' => true]);
-//                    $cli->post($data['address'], $data['message']);
-//                    $chan->push($cli->statusCode);
-//                });
-//                $result = $chan->pop();
-//            }
-//        }
-//        //完成任务，结束并返回数据
-//        $task->finish($result);
-        return $result;
+        if (is_array($task->data)) {
+            if (SocketLog::class === $task->data['action']) {
+                $cli = new Client($task->data['host'], $task->data['port']);
+                $cli->setMethod('POST');
+                $cli->setHeaders([
+                    'Host' => $task->data['host'],
+                    'Content-Type' => 'application/json;charset=UTF-8',
+                    'Accept' => 'text/html,application/xhtml+xml,application/xml',
+                    'Accept-Encoding' => 'gzip',
+                ]);
+                $cli->set(['timeout' => 3, 'keep_alive' => true]);
+                $cli->post($task->data['address'], $task->data['message']);
+                $result = $cli->statusCode;
+            }
+        }
+        //完成任务，结束并返回数据
+        $task->finish($result);
     }
 
     /**
