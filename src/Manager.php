@@ -66,6 +66,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 
     public function initialize()
     {
+        VirtualContainer::loadConfiguration();
         $this->initMessageSwitch();
         $this->registerServerEvent();
 

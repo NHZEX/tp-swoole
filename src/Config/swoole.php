@@ -5,9 +5,8 @@ use think\facade\Env;
 return [
     'auto_reload' => false,
     'enable_coroutine' => false,
-    'instances' => [],
     'resetters' => [],
-    // 'tables' => [],
+    'penetrates' => [],
     'server' => [
         'host' => '0.0.0.0', // 监听地址
         'port' => 9501, // 监听端口

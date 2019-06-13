@@ -54,6 +54,14 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         'swoole.server',
     ];
 
+    public static function loadConfiguration()
+    {
+        /** @var Config $config */
+        $config = static::$vinstance->make('config');
+        $penetrates = $config->get('swoole.penetrates', []);
+        self::$vinstance->penetrates = array_merge(self::$vinstance->penetrates, $penetrates);
+    }
+
     public function __construct(string $rootPath = '')
     {
         parent::__construct($rootPath);
