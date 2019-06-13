@@ -178,7 +178,7 @@ class Event
                 $subscriber = $this->app->make($subscriber);
             }
 
-            if (method_exists($subscriber, 'subscribe')) {
+            if ($subscriber instanceof EventSubscribeInterface) {
                 // 手动订阅
                 $subscriber->subscribe($this);
             } else {

@@ -85,10 +85,12 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
             $websocket->setHandler($this->config['websocket']['handler'])->registerEvent();
         }
 
-        \HZEX\TpSwoole\Facade\Event::subscribe([
+        $subscribe = [
             Http::class,
             WebSocket::class,
-        ]);
+        ];
+        $subscribe = array_merge($subscribe, $this->config['server']['events'] ?? []);
+        \HZEX\TpSwoole\Facade\Event::subscribe($subscribe);
     }
 
     protected function registerServerEvent()
@@ -274,8 +276,8 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 
     /**
      * 任务处理回调
-     * @param Server $server
-     * @param Task   $task
+     * @param Server      $server
+     * @param Server\Task $task
      */
     protected function onTask(Server $server, Server\Task $task)
     {
