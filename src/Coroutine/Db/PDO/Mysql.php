@@ -1,13 +1,14 @@
 <?php
 
-namespace HZEX\TpSwoole\Coroutine\Db;
+namespace HZEX\TpSwoole\Coroutine\Db\PDO;
 
 use BadMethodCallException;
 use InvalidArgumentException;
+use PDO;
 use PDOException;
-use Swoole\Coroutine\Mysql;
+use Swoole\Coroutine\Mysql as CoMysql;
 
-class PDO extends \PDO
+class Mysql extends PDO
 {
     public static $keyMap = [
         'dbname' => 'database',
@@ -20,11 +21,11 @@ class PDO extends \PDO
         'password'    => '',
         'database'    => '',
         'charset'     => 'utf8mb4',
-        'strict_type' => true,
         'timeout'     => -1,
+        'strict_type' => true,
     ];
 
-    /** @var Mysql */
+    /** @var CoMysql */
     public $client;
 
     public $inTransaction = false;
@@ -49,7 +50,7 @@ class PDO extends \PDO
      */
     protected function setClient($client = null)
     {
-        $this->client = $client ?: new Mysql;
+        $this->client = $client ?: new CoMysql();
     }
 
     /**
@@ -109,7 +110,7 @@ class PDO extends \PDO
             }
         }
 
-        return array_merge($configuredOptions, static::$options);
+        return array_merge(static::$options, $configuredOptions);
     }
 
     /**
@@ -215,7 +216,7 @@ class PDO extends \PDO
      *
      * @return array|bool|false|\PDOStatement
      */
-    public function query($statement, $mode = PDO::ATTR_DEFAULT_FETCH_MODE, $arg3 = null, array $ctorargs = [])
+    public function query($statement, $mode = Mysql::ATTR_DEFAULT_FETCH_MODE, $arg3 = null, array $ctorargs = [])
     {
         $result = $this->client->query($statement, self::$options['timeout']);
 
@@ -250,7 +251,7 @@ class PDO extends \PDO
         if ($stmtObj) {
             $stmtObj->bindKeyMap = $bindKeyMap ?? [];
 
-            return new PDOStatement($this, $stmtObj, $options);
+            return new MysqlStatement($this, $stmtObj, $options);
         } else {
             throw new PDOException($this->client->error, $this->client->errno);
         }
@@ -264,23 +265,23 @@ class PDO extends \PDO
     public function getAttribute($attribute)
     {
         switch ($attribute) {
-            case \PDO::ATTR_AUTOCOMMIT:
+            case PDO::ATTR_AUTOCOMMIT:
                 return true;
-            case \PDO::ATTR_CASE:
-            case \PDO::ATTR_CLIENT_VERSION:
-            case \PDO::ATTR_CONNECTION_STATUS:
+            case PDO::ATTR_CASE:
+            case PDO::ATTR_CLIENT_VERSION:
+            case PDO::ATTR_CONNECTION_STATUS:
                 return $this->client->connected;
-            case \PDO::ATTR_DRIVER_NAME:
-            case \PDO::ATTR_ERRMODE:
+            case PDO::ATTR_DRIVER_NAME:
+            case PDO::ATTR_ERRMODE:
                 return 'Swoole Style';
-            case \PDO::ATTR_ORACLE_NULLS:
-            case \PDO::ATTR_PERSISTENT:
-            case \PDO::ATTR_PREFETCH:
-            case \PDO::ATTR_SERVER_INFO:
+            case PDO::ATTR_ORACLE_NULLS:
+            case PDO::ATTR_PERSISTENT:
+            case PDO::ATTR_PREFETCH:
+            case PDO::ATTR_SERVER_INFO:
                 return self::$options['timeout'];
-            case \PDO::ATTR_SERVER_VERSION:
+            case PDO::ATTR_SERVER_VERSION:
                 return 'Swoole Mysql';
-            case \PDO::ATTR_TIMEOUT:
+            case PDO::ATTR_TIMEOUT:
             default:
                 throw new InvalidArgumentException('Not implemented yet!');
         }

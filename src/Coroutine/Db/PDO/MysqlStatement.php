@@ -1,14 +1,19 @@
 <?php
 
-namespace HZEX\TpSwoole\Coroutine\Db;
+namespace HZEX\TpSwoole\Coroutine\Db\PDO;
 
+use PDO;
 use PDOException;
+use PDOStatement;
 use Swoole\Coroutine\Mysql\Statement;
 
-class PDOStatement extends \PDOStatement
+class MysqlStatement extends PDOStatement
 {
     private $parent;
 
+    /**
+     * @var Statement | string
+     */
     public $statement;
 
     public $timeout;
@@ -23,7 +28,7 @@ class PDOStatement extends \PDOStatement
 
     public $fetchStyle = PDO::FETCH_BOTH;
 
-    public function __construct(PDO $parent, Statement $statement, array $driverOptions = [])
+    public function __construct(Mysql $parent, Statement $statement, array $driverOptions = [])
     {
         $this->parent = $parent;
         $this->statement = $statement;
@@ -192,8 +197,7 @@ class PDOStatement extends \PDOStatement
         $cursorOrientation = null,
         $cursorOffset = null,
         $fetchArgument = null
-    )
-    {
+    ) {
         $this->__executeWhenStringQueryEmpty();
 
         $cursorOrientation = is_null($cursorOrientation) ? PDO::FETCH_ORI_NEXT : $cursorOrientation;

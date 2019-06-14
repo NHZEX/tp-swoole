@@ -3,17 +3,25 @@
 namespace HZEX\TpSwoole\Coroutine\Db\Connector;
 
 use Exception;
-use HZEX\TpSwoole\Coroutine\Db\PDO;
+use HZEX\TpSwoole\Coroutine\Db\PDO\Mysql as PDOMysql;
 use PDOException;
+use think\Cache;
 use think\helper\Str;
+use think\Log;
 
 class Mysql extends \think\db\connector\Mysql
 {
-    protected $builderClassName = \think\db\builder\Mysql::class;
+    public function __construct(Cache $cache, Log $log, array $config = [])
+    {
+        $config['builder'] = !empty($config['builder'])
+            ? $config['builder']
+            : \think\db\builder\Mysql::class;
+        parent::__construct($cache, $log, $config);
+    }
 
     protected function createPdo($dsn, $username, $password, $params)
     {
-        return new PDO($dsn, $username, $password, $params);
+        return new PDOMysql($dsn, $username, $password, $params);
     }
 
     /**
