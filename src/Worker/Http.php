@@ -28,11 +28,6 @@ use Throwable;
 class Http implements SwooleServerHttpInterface, EventSubscribeInterface
 {
     /**
-     * @var bool
-     */
-    private $isRegistered = false;
-
-    /**
      * @var ResetterContract[]
      */
     protected $resetters = [];
@@ -47,14 +42,6 @@ class Http implements SwooleServerHttpInterface, EventSubscribeInterface
         $event->listen('swoole.onWorkerStart', Closure::fromCallable([$this, 'onStart']));
         $event->listen('swoole.onWorkerError', Closure::fromCallable([$this, 'onError']));
         $event->listen('swoole.onRequest', Closure::fromCallable([$this, 'onRequest']));
-    }
-
-    public function registerEvent()
-    {
-        if ($this->isRegistered) {
-            return;
-        }
-        $this->isRegistered = true;
     }
 
     public function getApp(): App

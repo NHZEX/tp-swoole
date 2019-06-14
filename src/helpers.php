@@ -125,7 +125,8 @@ if (!function_exists('debug_closure')) {
         } else {
             /** @noinspection PhpUnhandledExceptionInspection */
             $ref = new ReflectionFunction($object);
-            $content = $ref->__toString() . PHP_EOL;
+            $thisClass = get_class($ref->getClosureThis());
+            $content = "debug: $thisClass@{$ref->getStartLine()}-{$ref->getEndLine()}\n";
         }
         if ($display) {
             echo $content;

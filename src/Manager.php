@@ -76,15 +76,6 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 
         $this->mountProcess();
 
-        /** @var Http $http */
-        $http = $this->app->make(Http::class);
-        $http->registerEvent();
-
-        if ($this->swoole instanceof WsServer) {
-            /** @var WebSocket $websocket */
-            $websocket = $this->app->make(WebSocket::class);
-            $websocket->setHandler($this->config['websocket']['handler'])->registerEvent();
-        }
 
         $subscribe = [
             Http::class,
