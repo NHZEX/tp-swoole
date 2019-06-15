@@ -12,12 +12,10 @@ interface SwooleServerTaskInterface
     /**
      * 任务处理回调
      * @param HttpServer|WsServer $server
-     * @param int|Task            $taskId
-     * @param int                 $srcWorkerId
-     * @param mixed               $data
+     * @param Task                $task
      * @return null|mixed
      */
-    public function onTask($server, $taskId, int $srcWorkerId, $data);
+    public function onTask($server, Task $task);
 
     /**
      * 任务完成响应

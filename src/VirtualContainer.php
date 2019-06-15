@@ -9,6 +9,8 @@ use Closure;
 use Co;
 use Countable;
 use Exception;
+use HZEX\TpSwoole\Event as SwooleEvent;
+use HZEX\TpSwoole\Worker\ConnectionPool;
 use IteratorAggregate;
 use ReflectionException;
 use ReflectionObject;
@@ -48,9 +50,10 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         Console::class,
         Env::class,
         Event::class,
-        \HZEX\TpSwoole\Event::class,
         Lang::class,
+        SwooleEvent::class,
         Manager::class,
+        ConnectionPool::class,
         'swoole.server',
     ];
 
@@ -97,7 +100,6 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         }
         $instances->setValue($newContainer, $instancesVlaue);
 
-
         $newContainer->instance(App::class, $newContainer);
         $newContainer->instance(Container::class, $newContainer);
         $newContainer->instance(VirtualContainer::class, $newContainer);
@@ -114,7 +116,6 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
     public static function getInstance(): Container
     {
         $cid = Co::getCid();
-        // echo __METHOD__ . '=' . $cid . PHP_EOL;
 
         if (-1 === $cid) {
             return static::$vinstance;
@@ -124,10 +125,8 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
 
         if (false === isset($context['__app'])) {
             $context['__app'] = static::$vinstance->newCloneContainer();
-            //echo 'initGetInstance' . debug_object($context['__app'], false);
         }
 
-        // echo "getInstance#{$cid}#" . debug_object($context['__app']);
         return $context['__app'];
     }
 
@@ -147,8 +146,7 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
             return;
         }
 
-        // Co::getContext()['__app'] = $instance;
-        throw new Exception('无效操作');
+        throw new Exception('无效操作：协程中不能重新设置容器实例');
     }
 
     /**

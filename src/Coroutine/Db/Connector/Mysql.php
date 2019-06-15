@@ -2,9 +2,12 @@
 
 namespace HZEX\TpSwoole\Coroutine\Db\Connector;
 
+use Co;
 use Exception;
 use HZEX\TpSwoole\Coroutine\Db\PDO\Mysql as PDOMysql;
+use PDO;
 use PDOException;
+use Smf\ConnectionPool\BorrowConnectionTimeoutException;
 use think\Cache;
 use think\helper\Str;
 use think\Log;
@@ -19,8 +22,19 @@ class Mysql extends \think\db\connector\Mysql
         parent::__construct($cache, $log, $config);
     }
 
+    /**
+     * @param $dsn
+     * @param $username
+     * @param $password
+     * @param $params
+     * @return PDOMysql|PDO
+     * @throws BorrowConnectionTimeoutException
+     */
     protected function createPdo($dsn, $username, $password, $params)
     {
+        if (-1 === Co::getCid()) {
+            return parent::createPdo($dsn, $username, $password, $params);
+        }
         return new PDOMysql($dsn, $username, $password, $params);
     }
 
@@ -32,6 +46,10 @@ class Mysql extends \think\db\connector\Mysql
      */
     protected function isBreak($e): bool
     {
+        if (-1 === Co::getCid()) {
+            return parent::isBreak($e);
+        }
+
         if (!$this->config['break_reconnect']) {
             return false;
         }

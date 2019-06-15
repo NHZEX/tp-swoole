@@ -3,10 +3,20 @@
 namespace HZEX\TpSwoole\Coroutine\Db\PDO;
 
 use BadMethodCallException;
+use HZEX\TpSwoole\Worker\ConnectionPool;
 use InvalidArgumentException;
 use PDO;
 use PDOException;
+use PDOStatement;
+use Smf\ConnectionPool\BorrowConnectionTimeoutException;
+use Smf\ConnectionPool\ConnectionPool as SmfConnectionPool;
 use Swoole\Coroutine\Mysql as CoMysql;
+use function array_shift;
+use function count;
+use function explode;
+use function func_get_args;
+use function in_array;
+use function ucwords;
 
 class Mysql extends PDO
 {
@@ -14,6 +24,9 @@ class Mysql extends PDO
         'dbname' => 'database',
     ];
 
+    /**
+     * @var array
+     */
     private static $options = [
         'host'        => '',
         'port'        => 3306,
@@ -21,13 +34,32 @@ class Mysql extends PDO
         'password'    => '',
         'database'    => '',
         'charset'     => 'utf8mb4',
-        'timeout'     => -1,
+        'timeout'     => 10,
         'strict_type' => true,
+        // 'fetch_mode'  => true, // TODO ThinkPhp 不兼容
     ];
 
-    /** @var CoMysql */
+    /**
+     * @var string
+     */
+    public $poolName;
+
+    /**
+     * @var ConnectionPool
+     */
+    public $pools;
+
+    /**
+     * @var SmfConnectionPool
+     */
+    public $clientPool;
+
+    /** @var CoMysql|null */
     public $client;
 
+    /**
+     * @var bool
+     */
     public $inTransaction = false;
 
     /**
@@ -37,38 +69,42 @@ class Mysql extends PDO
      * @param string $username
      * @param string $password
      * @param array  $options
+     * @throws BorrowConnectionTimeoutException
      */
     public function __construct(string $dsn, string $username = '', string $password = '', array $options = [])
     {
         parent::__construct($dsn, $username, $password, $options);
-        $this->setClient();
         $this->connect($this->getOptions(...func_get_args()));
-    }
-
-    /**
-     * @param mixed $client
-     */
-    protected function setClient($client = null)
-    {
-        $this->client = $client ?: new CoMysql();
     }
 
     /**
      * @param array $options
      *
      * @return $this
+     * @throws BorrowConnectionTimeoutException
      */
     protected function connect(array $options = [])
     {
-        $this->client->connect($options);
+        $this->pools = app()->make(ConnectionPool::class);
 
-        if (!$this->client->connected) {
-            $message   = $this->client->connect_error ?: $this->client->error;
-            $errorCode = $this->client->connect_errno ?: $this->client->errno;
+        $smfMysqlPool = $this->pools->requestMysql($options, $this->poolName);
+        /** @var CoMysql $mysqlClient */
+        $mysqlClient = $smfMysqlPool->borrow();
 
-            throw new PDOException($message, $errorCode);
+        try {
+            if (!$mysqlClient->connected) {
+                $message   = $mysqlClient->connect_error ?: $mysqlClient->error;
+                $errorCode = $mysqlClient->connect_errno ?: $mysqlClient->errno;
+
+                throw new PDOException($message, $errorCode);
+            }
+        } catch (PDOException $exception) {
+            $smfMysqlPool->return($mysqlClient);
+            throw $exception;
         }
 
+        $this->pools = $smfMysqlPool;
+        $this->client = $mysqlClient;
         return $this;
     }
 
@@ -173,7 +209,8 @@ class Mysql extends PDO
      */
     public function lastInsertId($seqname = null)
     {
-        return $this->client->insert_id;
+        // thinkphp orm 要求必须字符串
+        return (string) $this->client->insert_id;
     }
 
     /**
@@ -214,7 +251,7 @@ class Mysql extends PDO
      * @param mixed  $arg3
      * @param array  $ctorargs
      *
-     * @return array|bool|false|\PDOStatement
+     * @return array|bool|false|PDOStatement
      */
     public function query($statement, $mode = Mysql::ATTR_DEFAULT_FETCH_MODE, $arg3 = null, array $ctorargs = [])
     {
@@ -231,7 +268,7 @@ class Mysql extends PDO
      * @param string $statement
      * @param array  $options
      *
-     * @return bool|\PDOStatement
+     * @return bool|PDOStatement
      */
     public function prepare($statement, $options = null)
     {
@@ -312,6 +349,6 @@ TXT
      */
     public function __destruct()
     {
-        $this->client->close();
+        $this->pools->getConnectionPool($this->poolName)->return($this->client);
     }
 }

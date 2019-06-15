@@ -8,7 +8,9 @@ use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use HZEX\TpSwoole\Process\Child\FileMonitor;
 use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
 use HZEX\TpSwoole\Swoole\SwooleServerInterface;
+use HZEX\TpSwoole\Swoole\SwooleServerTaskInterface;
 use HZEX\TpSwoole\Tp\Log\Driver\SocketLog;
+use HZEX\TpSwoole\Worker\ConnectionPool;
 use HZEX\TpSwoole\Worker\Http;
 use HZEX\TpSwoole\Worker\WebSocket;
 use Swoole\Coroutine\Http\Client;
@@ -23,7 +25,7 @@ use think\App;
 use think\Container;
 use Throwable;
 
-class Manager implements SwooleServerInterface, SwooleServerHttpInterface
+class Manager implements SwooleServerInterface, SwooleServerHttpInterface, SwooleServerTaskInterface
 {
     use Concerns\MessageSwitchTrait;
 
@@ -78,11 +80,13 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
 
 
         $subscribe = [
+            ConnectionPool::class,
             Http::class,
             WebSocket::class,
         ];
-        $subscribe = array_merge($subscribe, $this->config['server']['events'] ?? []);
-        \HZEX\TpSwoole\Facade\Event::subscribe($subscribe);
+        $subscribe = array_merge($subscribe, $this->config['events'] ?? []);
+        $this->getEvent()->subscribe($subscribe);
+        // \HZEX\TpSwoole\Facade\Event::subscribe($subscribe);
     }
 
     protected function registerServerEvent()
@@ -271,7 +275,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      * @param Server      $server
      * @param Server\Task $task
      */
-    protected function onTask(Server $server, Server\Task $task)
+    public function onTask($server, Server\Task $task)
     {
         $result = null;
         if (is_array($task->data)) {
@@ -299,7 +303,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface
      * @param int                 $taskId
      * @param string              $data
      */
-    protected function onFinish($server, int $taskId, string $data)
+    public function onFinish($server, int $taskId, $data): void
     {
         // 未触发事件
     }

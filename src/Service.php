@@ -26,6 +26,10 @@ class Service extends \think\Service
      */
     public function register()
     {
+        if (false === class_exists('\\Co')) {
+            return false;
+        }
+
         $this->isWebsocket = $this->app->config->get('swoole.websocket.enabled', false);
         Runtime::enableCoroutine($this->app->config->get('swoole.enable_coroutine', false));
 
@@ -43,6 +47,7 @@ class Service extends \think\Service
         if ($this->app->log instanceof \think\Log) {
             $this->app->instance(\think\Log::class, $this->app->make(Log::class));
         }
+        return true;
     }
 
     /**
