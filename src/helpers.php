@@ -2,6 +2,30 @@
 
 use think\Container;
 
+if (!function_exists('debug_array')) {
+    /**
+     * @param      $data
+     * @param bool $display
+     * @return mixed
+     */
+    function debug_array(iterable $data, $display = true)
+    {
+        foreach ($data as &$item) {
+            if (is_array($item)) {
+                $item = debug_array($item);
+            } else {
+                $item = trim(debug_object($item));
+            }
+        }
+        $content = $data;
+
+        if ($display) {
+            echo var_export($content, true);
+        }
+        return $content;
+    }
+}
+
 if (!function_exists('debug_object')) {
     /**
      * @param      $object
@@ -23,13 +47,13 @@ if (!function_exists('debug_object')) {
     }
 }
 
-if (!function_exists('debug_object_ex')) {
+if (!function_exists('debug_object_trace')) {
     /**
      * @param      $object
      * @param bool $display
      * @return string|null
      */
-    function debug_object_ex($object, $display = true)
+    function debug_object_trace($object, $display = true)
     {
         $debug = debug_backtrace(0, 10);
         $debug = array_filter($debug, function ($val) {

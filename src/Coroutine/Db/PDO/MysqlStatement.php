@@ -255,4 +255,9 @@ class MysqlStatement extends PDOStatement
 
         return $resultSet;
     }
+
+    public function __destruct()
+    {
+        unset($this->parent);
+    }
 }

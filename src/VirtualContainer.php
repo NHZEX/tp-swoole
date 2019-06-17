@@ -9,6 +9,9 @@ use Closure;
 use Co;
 use Countable;
 use Exception;
+use HZEX\TpSwoole\Container\Destroy\DestroyContract;
+use HZEX\TpSwoole\Container\Destroy\DestroyDbConnection;
+use HZEX\TpSwoole\Coroutine\CoDestroy;
 use HZEX\TpSwoole\Event as SwooleEvent;
 use HZEX\TpSwoole\Worker\ConnectionPool;
 use IteratorAggregate;
@@ -38,6 +41,12 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
     protected static $vinstance;
 
     /**
+     * 协程明确销毁的实例
+     * @var DestroyContract[]
+     */
+    private $containerDestroy = [];
+
+    /**
      * 穿透容器副本的实例
      * @var array
      */
@@ -63,6 +72,8 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         $config = static::$vinstance->make('config');
         $penetrates = $config->get('swoole.penetrates', []);
         self::$vinstance->penetrates = array_merge(self::$vinstance->penetrates, $penetrates);
+        $destroys = $config->get('swoole.container.destroy', []);
+        self::$vinstance->setInitialDestroys($destroys);
     }
 
     public function __construct(string $rootPath = '')
@@ -76,6 +87,27 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         parent::setInstance(Closure::fromCallable([self::class, 'getInstance']));
 
         static::$vinstance = $this;
+    }
+
+    /**
+     * 设置容器销毁后的动作
+     * @param array $destroys
+     */
+    private function setInitialDestroys(array $destroys)
+    {
+        $defaultDestroys = [
+            DestroyDbConnection::class,
+        ];
+
+        $destroys = array_merge($defaultDestroys, $destroys);
+
+        foreach ($destroys as $destroy) {
+            $destroyClass = $this->make($destroy);
+            if (!$destroyClass instanceof DestroyContract) {
+                throw new RuntimeException("{$destroy} must implement " . DestroyContract::class);
+            }
+            $this->containerDestroy[$destroy] = $destroyClass;
+        }
     }
 
     /**
@@ -124,7 +156,8 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         $context = Co::getContext();
 
         if (false === isset($context['__app'])) {
-            $context['__app'] = static::$vinstance->newCloneContainer();
+            $context['__app'] = $app = static::$vinstance->newCloneContainer();
+            $context['__destroy'] = new CoDestroy($app, static::$vinstance->containerDestroy);
         }
 
         return $context['__app'];

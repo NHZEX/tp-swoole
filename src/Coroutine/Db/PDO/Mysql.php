@@ -45,16 +45,13 @@ class Mysql extends PDO
     public $poolName;
 
     /**
-     * @var ConnectionPool
+     * @var SmfConnectionPool
      */
     public $pools;
 
     /**
-     * @var SmfConnectionPool
+     * @var CoMysql|null;
      */
-    public $clientPool;
-
-    /** @var CoMysql|null */
     public $client;
 
     /**
@@ -85,26 +82,27 @@ class Mysql extends PDO
      */
     protected function connect(array $options = [])
     {
-        $this->pools = app()->make(ConnectionPool::class);
+        /** @var ConnectionPool $pools */
+        $pools = app()->make(ConnectionPool::class);
 
-        $smfMysqlPool = $this->pools->requestMysql($options, $this->poolName);
-        /** @var CoMysql $mysqlClient */
-        $mysqlClient = $smfMysqlPool->borrow();
+        $this->pools = $pools->requestMysql($options, $this->poolName);
+        // echo 'mysql connect pools ' . debug_object($this->pools, false);
+
+        $this->client = $this->pools->borrow();
 
         try {
-            if (!$mysqlClient->connected) {
-                $message   = $mysqlClient->connect_error ?: $mysqlClient->error;
-                $errorCode = $mysqlClient->connect_errno ?: $mysqlClient->errno;
+            if (!$this->client->connected) {
+                $message   = $this->client->connect_error ?: $this->client->error;
+                $errorCode = $this->client->connect_errno ?: $this->client->errno;
 
                 throw new PDOException($message, $errorCode);
             }
         } catch (PDOException $exception) {
-            $smfMysqlPool->return($mysqlClient);
+            $this->pools->return($this->client);
+            $this->client = null;
             throw $exception;
         }
 
-        $this->pools = $smfMysqlPool;
-        $this->client = $mysqlClient;
         return $this;
     }
 
@@ -349,6 +347,8 @@ TXT
      */
     public function __destruct()
     {
-        $this->pools->getConnectionPool($this->poolName)->return($this->client);
+        if ($this->client instanceof CoMysql) {
+            $this->pools->return($this->client);
+        }
     }
 }

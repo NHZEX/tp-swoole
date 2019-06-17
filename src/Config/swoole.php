@@ -9,6 +9,9 @@ return [
     'penetrates' => [],
     'events' => [],
     'pools' => [],
+    'container' => [
+        'destroy' => [],
+    ],
     'server' => [
         'host' => '0.0.0.0', // 监听地址
         'port' => 9501, // 监听端口
