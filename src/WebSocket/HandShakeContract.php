@@ -11,7 +11,6 @@
 
 namespace HZEX\TpSwoole\WebSocket;
 
-use Swoole\Websocket\Frame;
 use think\Request;
 
 interface HandShakeContract

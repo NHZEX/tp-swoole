@@ -3,10 +3,7 @@ declare(strict_types=1);
 
 namespace HZEX\TpSwoole\Swoole;
 
-use Swoole\Http\Server as HttpServer;
 use Swoole\Server;
-use Swoole\Server\Task;
-use Swoole\WebSocket\Server as WsServer;
 
 interface SwooleServerTcpInterface
 {
@@ -34,5 +31,4 @@ interface SwooleServerTcpInterface
      * @param int    $reactorId
      */
     public function onClose(Server $server, int $fd, int $reactorId): void;
-
 }

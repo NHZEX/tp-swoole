@@ -11,6 +11,7 @@
 
 namespace HZEX\TpSwoole\Tp\Log\Driver;
 
+use Swoole\Server;
 use think\App;
 use think\contract\LogHandlerInterface;
 

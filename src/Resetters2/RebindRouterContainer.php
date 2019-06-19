@@ -17,7 +17,9 @@ class RebindRouterContainer implements ResetterContract
         $route = $app->make(Route::class);
 
         $closure = function () use ($app) {
+            /** @noinspection PhpUndefinedFieldInspection */
             $this->app = $app;
+            /** @noinspection PhpUndefinedFieldInspection */
             $this->request = $app->make(Request::class);
         };
 

@@ -58,6 +58,7 @@ class Request extends \think\Request
 
     /**
      * @param array $put
+     * @return Request
      */
     public function withPut(array $put)
     {

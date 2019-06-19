@@ -6,7 +6,6 @@ namespace HZEX\TpSwoole\Resetters2;
 use ReflectionException;
 use ReflectionObject;
 use think\App;
-use think\Container;
 
 class ResetApp implements ResetterContract
 {
@@ -14,7 +13,7 @@ class ResetApp implements ResetterContract
     /**
      * "handle" function for resetting app.
      *
-     * @param Container $container
+     * @param App $app
      */
     public function handle(App $app): void
     {

@@ -16,5 +16,6 @@ class CentralSwitch extends ChildProcess
     protected function processBox(Process $process)
     {
         // TODO: Implement processBox() method.
+        return true;
     }
 }

@@ -17,6 +17,7 @@ class RebindViewContainer implements ResetterContract
         $view = $app->make(View::class);
 
         $closure = function () use ($app) {
+            /** @noinspection PhpUndefinedFieldInspection */
             $this->app = $app;
         };
 

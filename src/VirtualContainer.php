@@ -17,6 +17,7 @@ use HZEX\TpSwoole\Worker\ConnectionPool;
 use IteratorAggregate;
 use ReflectionException;
 use ReflectionObject;
+use RuntimeException;
 use think\App;
 use think\Cache;
 use think\Config;
