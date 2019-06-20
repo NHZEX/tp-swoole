@@ -21,8 +21,6 @@ use think\contract\LogHandlerInterface;
  */
 class SocketLog implements LogHandlerInterface
 {
-    protected $app;
-
     public $port = 1116; //SocketLog 服务的http的端口号
 
     protected $config = [
@@ -56,13 +54,19 @@ class SocketLog implements LogHandlerInterface
      * @param  App   $app  应用对象
      * @param  array $config 缓存参数
      */
-    public function __construct(App $app, array $config = [])
+    public function __construct(array $config = [])
     {
-        $this->app = $app;
-
         if (!empty($config)) {
             $this->config = array_merge($this->config, $config);
         }
+    }
+
+    /**
+     * @return App
+     */
+    private function getApp(): App
+    {
+        return App::getInstance();
     }
 
     /**
@@ -79,16 +83,17 @@ class SocketLog implements LogHandlerInterface
 
         $trace = [];
 
-        if ($this->app->isDebug()) {
-            $runtime    = round(microtime(true) - $this->app->getBeginTime(), 10);
+        $app = $this->getApp();
+        if ($app->isDebug()) {
+            $runtime    = round(microtime(true) - $app->getBeginTime(), 10);
             $reqs       = $runtime > 0 ? number_format(1 / $runtime, 2) : '∞';
             $time_str   = ' [运行时间：' . number_format($runtime, 6) . 's][吞吐率：' . $reqs . 'req/s]';
-            $memory_use = number_format((memory_get_usage() - $this->app->getBeginMem()) / 1024, 2);
+            $memory_use = number_format((memory_get_usage() - $app->getBeginMem()) / 1024, 2);
             $memory_str = ' [内存消耗：' . $memory_use . 'kb]';
             $file_load  = ' [文件加载：' . count(get_included_files()) . ']';
 
-            if ($this->app->exists('request')) {
-                $current_uri = $this->app->request->host(). $this->app->request->baseUrl();
+            if ($app->exists('request')) {
+                $current_uri = $app->request->host(). $app->request->baseUrl();
             } else {
                 $current_uri = 'cmd:' . implode(' ', $_SERVER['argv'] ?? ['unknown']);
             }
@@ -227,12 +232,13 @@ class SocketLog implements LogHandlerInterface
 
     protected function getClientArg($name)
     {
+        $app = $this->getApp();
         $key = 'HTTP_USER_AGENT';
-        if (empty($this->app->request->server('HTTP_SOCKETLOG', ''))) {
+        if (empty($app->request->server('HTTP_SOCKETLOG', ''))) {
             $key = 'HTTP_SOCKETLOG';
         }
 
-        if (empty($socketLog = $this->app->request->server($key))) {
+        if (empty($socketLog = $app->request->server($key))) {
             return [];
         }
 
@@ -260,7 +266,8 @@ class SocketLog implements LogHandlerInterface
      */
     protected function send($host, $message = '', $address = '/')
     {
-        if (false === $this->app->has('swoole.server')) {
+        $app = $this->getApp();
+        if (false === $app->has('swoole.server')) {
             $url = 'http://' . $host . ':' . $this->port . $address;
             $ch  = curl_init();
             curl_setopt($ch, CURLOPT_URL, $url);
@@ -277,7 +284,7 @@ class SocketLog implements LogHandlerInterface
         }
 
         /** @var Server $server */
-        $server = $this->app->make('swoole.server');
+        $server = $app->make('swoole.server');
         $server->task([
             'action' => static::class,
             'host' => $host,
