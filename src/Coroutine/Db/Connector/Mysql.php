@@ -14,12 +14,16 @@ use think\Log;
 
 class Mysql extends \think\db\connector\Mysql
 {
+    protected $isSwoole = false;
+
     public function __construct(Cache $cache, Log $log, array $config = [])
     {
         $config['builder'] = !empty($config['builder'])
             ? $config['builder']
             : \think\db\builder\Mysql::class;
         parent::__construct($cache, $log, $config);
+
+        $this->isSwoole = exist_swoole();
     }
 
     /**
@@ -32,7 +36,7 @@ class Mysql extends \think\db\connector\Mysql
      */
     protected function createPdo($dsn, $username, $password, $params)
     {
-        if (-1 === Co::getCid()) {
+        if (false === $this->isSwoole || -1 === Co::getCid()) {
             return parent::createPdo($dsn, $username, $password, $params);
         }
         return new PDOMysql($dsn, $username, $password, $params);

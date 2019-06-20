@@ -26,7 +26,7 @@ class Service extends \think\Service
      */
     public function register()
     {
-        if (false === class_exists('\\Co')) {
+        if (false === exist_swoole()) {
             return false;
         }
 
