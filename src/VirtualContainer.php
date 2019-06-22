@@ -67,6 +67,9 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         'swoole.server',
     ];
 
+    /**
+     * 加载虚拟容器配置
+     */
     public static function loadConfiguration()
     {
         /** @var Config $config */

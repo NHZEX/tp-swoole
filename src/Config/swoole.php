@@ -7,6 +7,7 @@ return [
     'enable_coroutine' => false,
     'resetters' => [],
     'penetrates' => [],
+    'process' => [],
     'events' => [],
     'pools' => [],
     'container' => [

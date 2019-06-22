@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace HZEX\TpSwoole\Concerns;
 
 use Closure;
+use Exception;
+use HZEX\TpSwoole\Process\ChildProcess;
 use HZEX\TpSwoole\Process\ChildProcessInterface;
 use HZEX\TpSwoole\Process\FrameProtocol;
 use HZEX\TpSwoole\Process\MessageSwitch;
@@ -37,10 +39,14 @@ trait MessageSwitchTrait
 
     /**
      * 挂载用户进程
+     * @throws Exception
      */
     protected function mountProcess()
     {
         foreach ($this->initChildProcess as $child) {
+            if (false === $child instanceof ChildProcess) {
+                throw new Exception('无效的进程类');
+            }
             // 初始进程对象
             $process = $child->makeProcess();
             // 监听进程通信管道

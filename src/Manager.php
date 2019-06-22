@@ -66,30 +66,27 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
         $this->config = $this->app->config->get('swoole');
     }
 
+    /**
+     * @throws Exception
+     */
     public function initialize()
     {
+        // 加载虚拟容器配置
         VirtualContainer::loadConfiguration();
+        // 初始进程事件交换机
         $this->initMessageSwitch();
-        $this->registerServerEvent();
-
-        if ($this->config['auto_reload'] ?? false) {
-            $this->initChildProcess[] = $this->app->make(FileMonitor::class);
-        }
-
-        $this->mountProcess();
-
-
-        $subscribe = [
-            ConnectionPool::class,
-            Http::class,
-            WebSocket::class,
-        ];
-        $subscribe = array_merge($subscribe, $this->config['events'] ?? []);
-        $this->getEvent()->subscribe($subscribe);
-        // \HZEX\TpSwoole\Facade\Event::subscribe($subscribe);
+        // 注册事件发布
+        $this->registerEvent();
+        // 初始事件订阅
+        $this->initSubscribe();
+        // 初始外部进程集
+        $this->initProcess();
     }
 
-    protected function registerServerEvent()
+    /**
+     * 注册事件触发
+     */
+    protected function registerEvent()
     {
         // Http
         if ($this->swoole instanceof HttpServer) {
@@ -111,6 +108,35 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
                 };
             $this->swoole->on($event, $callback);
         }
+    }
+
+    /**
+     * 初始事件发布
+     */
+    protected function initSubscribe()
+    {
+        $subscribe = [
+            ConnectionPool::class,
+            Http::class,
+            WebSocket::class,
+        ];
+        $subscribe = array_merge($subscribe, $this->config['events'] ?? []);
+        $this->getEvent()->subscribe($subscribe);
+    }
+
+    /**
+     * 初始外部进程集
+     * @throws Exception
+     */
+    protected function initProcess()
+    {
+        if ($this->config['auto_reload'] ?? false) {
+            $this->initChildProcess[] = $this->app->make(FileMonitor::class);
+        }
+        foreach ($this->config['process'] ?? [] as $process) {
+            $this->initChildProcess[] = $this->app->make($process);
+        }
+        $this->mountProcess();
     }
 
     /**
