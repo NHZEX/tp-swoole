@@ -12,6 +12,7 @@ use HZEX\TpSwoole\Resetters2\RebindRouterContainer;
 use HZEX\TpSwoole\Resetters2\RebindValidate;
 use HZEX\TpSwoole\Resetters2\RebindViewContainer;
 use HZEX\TpSwoole\Resetters2\ResetApp;
+use HZEX\TpSwoole\Resetters2\ResetMiddleware;
 use HZEX\TpSwoole\Resetters2\ResetterContract;
 use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
 use RuntimeException;
@@ -91,6 +92,7 @@ class Http implements SwooleServerHttpInterface, EventSubscribeInterface
         $resetters = [
             // ClearInstances::class,
             ResetApp::class,
+            ResetMiddleware::class,
             RebindHttpContainer::class,
             RebindRouterContainer::class,
             RebindViewContainer::class,
