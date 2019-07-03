@@ -49,11 +49,11 @@ return [
         ],
     ],
     'websocket' => [
-        'enabled' => true,
+        'enabled' => false,
         // 'host' => '0.0.0.0', // 监听地址
         // 'port' => 9502, // 监听端口
         // 'sock_type' => SWOOLE_TCP, // sock type 默认为SWOOLE_SOCK_TCP
-        'handler' => 'class_name',
+        'handler' => '',
         // 'parser' => Parser::class,
         // 'route_file' => base_path() . 'websocket.php',
         'ping_interval' => 25000,

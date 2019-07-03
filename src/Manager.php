@@ -13,6 +13,7 @@ use HZEX\TpSwoole\Tp\Log\Driver\SocketLog;
 use HZEX\TpSwoole\Worker\ConnectionPool;
 use HZEX\TpSwoole\Worker\Http;
 use HZEX\TpSwoole\Worker\WebSocket;
+use HZEX\TpSwoole\Worker\WorkerPluginContract;
 use Swoole\Coroutine\Http\Client;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
@@ -29,17 +30,40 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
 {
     use Concerns\MessageSwitchTrait;
 
-    /** @var App 服务绑定在App上，不要使用容器替代App */
+    /**
+     * @var App $app
+     */
     private $app;
 
-    /** @var HttpServer|WsServer */
+    /**
+     * @var Server|HttpServer|WsServer $swoole
+     */
     private $swoole;
 
-    /** @var array */
+    /**
+     * @var array
+     */
     private $config;
 
-    /** @var */
+    /**
+     * @var int $workerId
+     */
     private $workerId;
+
+    /**
+     * 插件
+     * @var array $plugins
+     */
+    private $plugins = [
+        ConnectionPool::class,
+        Http::class,
+        WebSocket::class,
+    ];
+
+    /**
+     * @var array $subscribes
+     */
+    private $subscribes = [];
 
     /** @var array 支持的响应事件 */
     protected $events = [
@@ -50,8 +74,6 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
         'Task', 'Finish', // Task
         'Connect', 'Receive', 'Close', // Tcp
         'Packet', // Udp
-        'Request', // Http
-        'HandShake', 'Open', 'Message' // WebSocket
     ];
 
     /**
@@ -64,6 +86,8 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
 
         $this->swoole = ServerFacade::instance();
         $this->config = $this->app->config->get('swoole');
+        $this->subscribes = $this->config['events'] ?? [];
+        $this->plugins = array_merge($this->plugins, $this->config['plugins'] ?? []);
     }
 
     /**
@@ -75,30 +99,50 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
         VirtualContainer::loadConfiguration();
         // 初始进程事件交换机
         $this->initMessageSwitch();
-        // 注册事件发布
+        // 初始化插件
+        $this->initPlugins();
+        // 注册系统事件触发
         $this->registerEvent();
-        // 初始事件订阅
+        // 注册应用事件监听
         $this->initSubscribe();
         // 初始外部进程集
         $this->initProcess();
     }
 
     /**
-     * 注册事件触发
+     * 初始化插件
+     * @throws Exception
+     */
+    protected function initPlugins()
+    {
+        $subscribe = [];
+        foreach ($this->plugins as $plugin) {
+            if (is_string($plugin)) {
+                /** @var WorkerPluginContract $plugin */
+                $plugin = $this->app->make($plugin);
+            }
+            if (false === $plugin instanceof WorkerPluginContract) {
+                throw new Exception('无效插件: ' . get_class($plugin));
+            }
+            // 如果插件未准备就绪就跳过
+            if (false === $plugin->isReady($this)) {
+                continue;
+            }
+            // 如果实现事件订阅则添加到待订阅列表
+            if ($plugin instanceof EventSubscribeInterface) {
+                $subscribe[] = $plugin;
+            }
+            // 执行启动准备过程
+            $plugin->prepare($this);
+        }
+        $this->subscribes = array_merge($subscribe, $this->subscribes);
+    }
+
+    /**
+     * 注册系统事件触发
      */
     protected function registerEvent()
     {
-        // Http
-        if ($this->swoole instanceof HttpServer) {
-            $this->events[] = 'Request';
-        }
-        // WebSocket
-        if ($this->swoole instanceof WsServer) {
-            // $this->events[] = 'HandShake';
-            $this->events[] = 'Open';
-            $this->events[] = 'Message';
-        }
-
         foreach ($this->events as $event) {
             $listener = "on$event";
             $callback = method_exists($this, $listener)
@@ -111,17 +155,11 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
     }
 
     /**
-     * 初始事件发布
+     * 注册应用事件监听
      */
     protected function initSubscribe()
     {
-        $subscribe = [
-            ConnectionPool::class,
-            Http::class,
-            WebSocket::class,
-        ];
-        $subscribe = array_merge($subscribe, $this->config['events'] ?? []);
-        $this->getEvent()->subscribe($subscribe);
+        $this->getEvent()->subscribe($this->subscribes);
     }
 
     /**
@@ -137,6 +175,25 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
             $this->initChildProcess[] = $this->app->make($process);
         }
         $this->mountProcess();
+    }
+
+    /**
+     * @return array
+     */
+    public function getEvents()
+    {
+        return $this->events;
+    }
+
+    /**
+     * 更改监听事件
+     * @param array $events
+     * @return $this
+     */
+    public function withEvents(array $events)
+    {
+        $this->events = $events;
+        return $this;
     }
 
     /**

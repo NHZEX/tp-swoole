@@ -6,6 +6,7 @@ namespace HZEX\TpSwoole\Worker;
 use Closure;
 use HZEX\TpSwoole\Event;
 use HZEX\TpSwoole\EventSubscribeInterface;
+use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\Swoole\SwooleServerWorkerInterface;
 use Smf\ConnectionPool\ConnectionPool as SmfConnectionPool;
 use Smf\ConnectionPool\ConnectionPoolTrait;
@@ -16,7 +17,7 @@ use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
 use think\Config;
 
-class ConnectionPool implements SwooleServerWorkerInterface, EventSubscribeInterface
+class ConnectionPool implements WorkerPluginContract, SwooleServerWorkerInterface, EventSubscribeInterface
 {
     use ConnectionPoolTrait;
 
@@ -31,6 +32,26 @@ class ConnectionPool implements SwooleServerWorkerInterface, EventSubscribeInter
     public function __construct(Config $config)
     {
         $this->config = $config->get('redis', []) + $this->config;
+    }
+
+    /**
+     * 插件是否就绪
+     * @param Manager $manager
+     * @return bool
+     */
+    public function isReady(Manager $manager): bool
+    {
+        return true;
+    }
+
+    /**
+     * 插件准备启动
+     * @param Manager $manager
+     * @return bool
+     */
+    public function prepare(Manager $manager): bool
+    {
+        return true;
     }
 
     public function subscribe(Event $event): void

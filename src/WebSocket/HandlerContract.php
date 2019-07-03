@@ -21,7 +21,13 @@ interface HandlerContract
      * @param WsServer $server
      * @param int      $workerId
      */
-    public function onStart(WsServer $server, int $workerId);
+    public function onStart(WsServer $server, int $workerId): void;
+
+    /**
+     * @param WsServer $server
+     * @param int      $workerId
+     */
+    public function onStop(WsServer $server, int $workerId): void;
 
     /**
      * "onOpen" listener.

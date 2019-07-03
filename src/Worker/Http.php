@@ -7,6 +7,7 @@ use Closure;
 use Exception;
 use HZEX\TpSwoole\Event;
 use HZEX\TpSwoole\EventSubscribeInterface;
+use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\Resetters2\RebindHttpContainer;
 use HZEX\TpSwoole\Resetters2\RebindRouterContainer;
 use HZEX\TpSwoole\Resetters2\RebindValidate;
@@ -26,7 +27,7 @@ use think\console\Output;
 use think\exception\Handle;
 use Throwable;
 
-class Http implements SwooleServerHttpInterface, EventSubscribeInterface
+class Http implements WorkerPluginContract, SwooleServerHttpInterface, EventSubscribeInterface
 {
     /**
      * @var ResetterContract[]
@@ -35,6 +36,29 @@ class Http implements SwooleServerHttpInterface, EventSubscribeInterface
 
     public function __construct()
     {
+    }
+
+    /**
+     * 插件是否就绪
+     * @param Manager $manager
+     * @return bool
+     */
+    public function isReady(Manager $manager): bool
+    {
+        return $manager->getSwoole() instanceof HttpServer;
+    }
+
+    /**
+     * 插件准备启动
+     * @param Manager $manager
+     * @return bool
+     */
+    public function prepare(Manager $manager): bool
+    {
+        $event = $manager->getEvents();
+        $event[] = 'Request';
+        $manager->withEvents($event);
+        return true;
     }
 
     public function subscribe(Event $event): void

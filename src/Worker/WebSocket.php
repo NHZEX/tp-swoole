@@ -6,76 +6,123 @@ namespace HZEX\TpSwoole\Worker;
 use Closure;
 use HZEX\TpSwoole\Event;
 use HZEX\TpSwoole\EventSubscribeInterface;
-use HZEX\TpSwoole\Facade\Server;
 use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\Swoole\SwooleWebSocketInterface;
 use HZEX\TpSwoole\WebSocket\HandlerContract;
+use HZEX\TpSwoole\WebSocket\HandShakeContract;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\WebSocket\Frame;
 use Swoole\WebSocket\Server as WsServer;
 use think\App;
+use think\Config;
 use Throwable;
 
-class WebSocket implements SwooleWebSocketInterface, EventSubscribeInterface
+class WebSocket implements WorkerPluginContract, SwooleWebSocketInterface, EventSubscribeInterface
 {
     /** @var App */
     private $app;
-    /** @var HandlerContract */
+    /** @var array */
+    private $config = [
+        'enabled' => true,
+        // 'host' => '0.0.0.0', // 监听地址
+        // 'port' => 9502, // 监听端口
+        // 'sock_type' => SWOOLE_TCP, // sock type 默认为SWOOLE_SOCK_TCP
+        'handler' => '',
+        // 'parser' => Parser::class,
+        // 'route_file' => base_path() . 'websocket.php',
+        'ping_interval' => 25000,
+        'ping_timeout' => 60000,
+    ];
+    /** @var HandlerContract|HandShakeContract */
     private $handle;
     /** @var bool */
-    private $isRegistered = false;
-    /** @var bool */
     private $handShakeHandle = false;
+    /** @var WsServer */
+    private $server;
 
-    public function __construct(App $app)
+    public function __construct(App $app, Config $config)
     {
         $this->app = $app;
+        $this->config = $config->get('swoole.websocket', []) + $this->config;
+        // 加载处理器
+        $this->setHandler($this->config['handler']);
+    }
+
+    /**
+     * 插件是否就绪
+     * @param Manager $manager
+     * @return bool
+     */
+    public function isReady(Manager $manager): bool
+    {
+        return $manager->getSwoole() instanceof WsServer;
+    }
+
+    /**
+     * 插件准备启动
+     * @param Manager $manager
+     * @return bool
+     */
+    public function prepare(Manager $manager): bool
+    {
+        $this->server = $manager->getSwoole();
+        $event = $manager->getEvents();
+        $this->handShakeHandle && $event[] = 'HandShake';
+        $event[] = 'Open';
+        $event[] = 'Message';
+        $manager->withEvents($event);
+        return true;
     }
 
     public function subscribe(Event $event): void
     {
-        // TODO: Implement subscribe() method.
+        $event->listen('swoole.onWorkerStart', Closure::fromCallable([$this, 'onStart']));
+        $event->listen('swoole.onWorkerStop', Closure::fromCallable([$this, 'onStop']));
+        $event->listen('swoole.onOpen', Closure::fromCallable([$this, 'onOpen']));
+        $event->listen('swoole.onMessage', Closure::fromCallable([$this, 'onMessage']));
+        $event->listen('swoole.onClose', function (WsServer $server, $fd, int $reactorId): void {
+            if ($server->isEstablished($fd)) {
+                $this->onClose($server, $fd, $reactorId);
+            }
+        });
+        if ($this->handShakeHandle) {
+            $event->listen('swoole.onHandShake', Closure::fromCallable([$this, 'onHandShake']));
+        }
     }
 
-    public function setHandler(string $class)
+    protected function setHandler(string $class)
     {
         if (class_exists($class)) {
             $this->handle = $this->app->make($class);
             if (false === $this->handle instanceof HandlerContract) {
                 $this->handle = null;
             }
+            if ($this->handle instanceof HandShakeContract) {
+                $this->handShakeHandle = true;
+            }
         }
         return $this;
     }
 
-    public function registerEvent()
+    /**
+     * 连接建立回调（WebSocket）
+     * @param WsServer $server
+     * @param int      $workerId
+     */
+    public function onStart($server, int $workerId): void
     {
-        if ($this->isRegistered) {
-            return;
-        }
-        if (empty($this->handle)) {
-            return;
-        }
+        $this->handle->onStart($server, $workerId);
+    }
 
-        $this->isRegistered = true;
-
-        // 监听公共事件
-        $event = $this->app->make(Event::class);
-        $event->listen('swoole.onClose', function (WsServer $server, $fd, int $reactorId): void {
-            if ($server->isEstablished($fd)) {
-                $this->onClose($server, $fd, $reactorId);
-            }
-        });
-
-        // 监听私有事件
-        /** @var WsServer $swoole */
-        $swoole = Server::instance();
-        $swoole->on('Open', Closure::fromCallable([$this, 'onOpen']));
-        $swoole->on('Message', Closure::fromCallable([$this, 'onMessage']));
-        if ($this->handShakeHandle) {
-            $swoole->on('HandShake', Closure::fromCallable([$this, 'onHandShake']));
-        }
+    /**
+     * 工作进程终止（Worker/Task）
+     * @param WsServer $server
+     * @param int      $workerId
+     */
+    public function onStop($server, int $workerId): void
+    {
+        $this->handle->onStop($server, $workerId);
     }
 
     /**
@@ -85,7 +132,11 @@ class WebSocket implements SwooleWebSocketInterface, EventSubscribeInterface
      */
     public function onHandShake(Request $request, Response $response): void
     {
-        // TODO: Implement onHandShake() method.
+        if ($this->handle->onHandShake($request, $response)) {
+            $this->server->defer(function () use ($request) {
+                $this->onOpen($this->server, $request);
+            });
+        }
     }
 
     /**

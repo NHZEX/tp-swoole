@@ -11,15 +11,17 @@
 
 namespace HZEX\TpSwoole\WebSocket;
 
-use think\Request;
+use Swoole\Http\Request;
+use Swoole\Http\Response;
 
 interface HandShakeContract
 {
     /**
-     * "onOpen" listener.
+     * "onHandShake" listener.
      *
-     * @param int     $fd
-     * @param Request $request
+     * @param Request  $request
+     * @param Response $response
+     * @return bool
      */
-    public function onOpen($fd, Request $request);
+    public function onHandShake(Request $request, Response $response): bool;
 }
