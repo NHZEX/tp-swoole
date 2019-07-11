@@ -11,6 +11,7 @@
 
 namespace HZEX\TpSwoole\Command;
 
+use Exception;
 use HZEX\TpSwoole\Manager;
 use Swoole\Process;
 use think\console\Command;
@@ -112,6 +113,7 @@ class ServerCommand extends Command
      * 启动server
      * @access protected
      * @return bool
+     * @throws Exception
      */
     protected function start()
     {
@@ -164,6 +166,7 @@ class ServerCommand extends Command
      * 重启server
      * @access protected
      * @return void
+     * @throws Exception
      */
     protected function restart()
     {

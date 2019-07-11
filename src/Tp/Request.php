@@ -51,7 +51,7 @@ class Request extends \think\Request
      * @param $content
      * @return array
      */
-    public function getInputData($content)
+    public function getInputData($content): array
     {
         return parent::getInputData($content);
     }

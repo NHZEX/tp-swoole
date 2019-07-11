@@ -20,6 +20,7 @@ use Swoole\Http\Response;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Http2\Request as H2Request;
 use Swoole\Http2\Response as H2Response;
+use Swoole\Runtime;
 use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
 use think\App;
@@ -222,6 +223,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
      */
     public function start()
     {
+        Runtime::enableCoroutine($this->config['enable_coroutine'] ?? false);
         ServerFacade::instance()->start();
     }
 
@@ -403,7 +405,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
 
     /**
      * 调试容器
-     * @param Container $container
+     * @param Container|App $container
      * @param           $workerId
      */
     public static function debugContainer(Container $container, $workerId)

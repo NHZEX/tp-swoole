@@ -13,19 +13,20 @@
     "prefer-stable": true,
     "require": {
         "php": "~7.2.10",
+        "ext-curl": "*",
         "ext-json": "*",
         "ext-pcntl": "*",
         "ext-pdo": "*",
-        "ext-swoole": "^4.3.2",
-        "ext-curl": "*",
         "ext-sockets": "*",
+        "ext-swoole": "~4.3",
         "open-smf/connection-pool": "~1.0",
-        "topthink/framework": "6.0.x-dev",
-        "topthink/think-helper": "^3.0"
+        "topthink/framework": "6.0.x-dev#f9b4e134c2cdbf77cd4e44da9c70a2a983a1a475",
+        "topthink/think-helper": "^3.0",
+        "topthink/think-orm": "^2.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^8",
-        "swoole/ide-helper": "^4.3"
+        "swoole/ide-helper": "~4.3.4"
     },
     "autoload": {
         "psr-4": {

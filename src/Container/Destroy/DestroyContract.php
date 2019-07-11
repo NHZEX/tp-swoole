@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace HZEX\TpSwoole\Container\Destroy;
 
+use think\App;
 use think\Container;
 
 interface DestroyContract
@@ -10,7 +11,7 @@ interface DestroyContract
     /**
      * "handle" function for clean.
      *
-     * @param Container $container
+     * @param Container|App $container
      */
     public function handle(Container $container): void;
 }

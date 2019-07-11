@@ -4,31 +4,39 @@ namespace HZEX\TpSwoole\Tp;
 
 class Log extends \think\Log
 {
+    protected $isSwoole = false;
+
     /**
-     * 记录日志信息
+     * 初始化
      * @access public
-     * @param  mixed  $msg       日志信息
-     * @param  string $type      日志级别
-     * @param  array  $context   替换内容
-     * @return $this
+     * @param array $config
      */
-    public function record($msg, $type = 'info', array $context = [])
+    public function init(array $config = [])
     {
-        if (!$this->allowWrite) {
-            return $this;
+        parent::init($config);
+
+        $this->isSwoole = exist_swoole();
+    }
+
+    /**
+     * 记录通道日志
+     * @access public
+     * @param  string $channel 日志通道
+     * @param  mixed  $msg  日志信息
+     * @param  string $type 日志级别
+     * @return void
+     */
+    protected function channelLog(string $channel, $msg, string $type): void
+    {
+        if (!empty($this->close['*']) || !empty($this->close[$channel])) {
+            return;
         }
 
-        if (is_string($msg) && !empty($context)) {
-            $replace = [];
-            foreach ($context as $key => $val) {
-                $replace['{' . $key . '}'] = $val;
-            }
-
-            $msg = strtr($msg, $replace);
+        if (!$this->isSwoole && ($this->isCli || !empty($this->config['channels'][$channel]['realtime_write']))) {
+            // 实时写入
+            $this->write($msg, $type, true, $channel);
+        } else {
+            $this->log[$channel][$type][] = $msg;
         }
-
-        $this->log[$type][] = $msg;
-
-        return $this;
     }
 }

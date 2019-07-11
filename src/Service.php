@@ -7,7 +7,6 @@ use HZEX\TpSwoole\Command\ServerCommand;
 use HZEX\TpSwoole\Tp\Log;
 use HZEX\TpSwoole\Tp\Request;
 use Swoole\Http\Server as HttpServer;
-use Swoole\Runtime;
 use Swoole\Server as Server;
 use Swoole\WebSocket\Server as WebsocketServer;
 
@@ -31,7 +30,6 @@ class Service extends \think\Service
         }
 
         $this->isWebsocket = $this->app->config->get('swoole.websocket.enabled', false);
-        Runtime::enableCoroutine($this->app->config->get('swoole.enable_coroutine', false));
 
         // 绑定必须类
         $this->app->bind('swoole.server', function () {

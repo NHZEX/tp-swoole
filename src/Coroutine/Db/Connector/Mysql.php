@@ -8,21 +8,24 @@ use HZEX\TpSwoole\Coroutine\Db\PDO\Mysql as PDOMysql;
 use PDO;
 use PDOException;
 use Smf\ConnectionPool\BorrowConnectionTimeoutException;
-use think\Cache;
 use think\helper\Str;
-use think\Log;
 
 class Mysql extends \think\db\connector\Mysql
 {
     protected $isSwoole = false;
 
-    public function __construct(Cache $cache, Log $log, array $config = [])
+    /**
+     * 架构函数 读取数据库配置信息
+     * @access public
+     * @param array $config 数据库配置数组
+     */
+    public function __construct(array $config = [])
     {
         $config['builder'] = !empty($config['builder'])
             ? $config['builder']
             : \think\db\builder\Mysql::class;
-        parent::__construct($cache, $log, $config);
 
+        parent::__construct($config);
         $this->isSwoole = exist_swoole();
     }
 

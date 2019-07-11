@@ -51,8 +51,7 @@ class SocketLog implements LogHandlerInterface
     /**
      * 架构函数
      * @access public
-     * @param  App   $app  应用对象
-     * @param  array $config 缓存参数
+     * @param array $config 缓存参数
      */
     public function __construct(array $config = [])
     {
@@ -267,7 +266,7 @@ class SocketLog implements LogHandlerInterface
     protected function send($host, $message = '', $address = '/')
     {
         $app = $this->getApp();
-        if (false === $app->has('swoole.server')) {
+        if (false === $app->has('swoole.server') || 0 === $app->make('swoole.server')->manager_pid) {
             $url = 'http://' . $host . ':' . $this->port . $address;
             $ch  = curl_init();
             curl_setopt($ch, CURLOPT_URL, $url);

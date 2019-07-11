@@ -272,7 +272,6 @@ class Http implements WorkerPluginContract, SwooleServerHttpInterface, EventSubs
 
     public function requestEnd()
     {
-        $this->getApp()->log->save();
     }
 
     /**
