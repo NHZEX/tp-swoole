@@ -57,6 +57,14 @@ class Service extends \think\Service
     }
 
     /**
+     * @return HttpServer|Server|WebsocketServer
+     */
+    public static function getServer()
+    {
+        return self::$server;
+    }
+
+    /**
      * Create swoole server.
      */
     protected function createSwooleServer()

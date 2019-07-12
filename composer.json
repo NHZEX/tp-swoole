@@ -20,7 +20,7 @@
         "ext-sockets": "*",
         "ext-swoole": "~4.3",
         "open-smf/connection-pool": "~1.0",
-        "topthink/framework": "6.0.x-dev#f9b4e134c2cdbf77cd4e44da9c70a2a983a1a475",
+        "topthink/framework": "6.0.x-dev#661510f51894f0f755e531fa792449780ed7d960",
         "topthink/think-helper": "^3.0",
         "topthink/think-orm": "^2.0"
     },

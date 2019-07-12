@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace HZEX\TpSwoole\Resetters2;
+namespace HZEX\TpSwoole\Resetters;
 
 use ReflectionException;
 use ReflectionObject;

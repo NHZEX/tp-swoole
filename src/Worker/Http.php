@@ -8,13 +8,13 @@ use Exception;
 use HZEX\TpSwoole\Event;
 use HZEX\TpSwoole\EventSubscribeInterface;
 use HZEX\TpSwoole\Manager;
-use HZEX\TpSwoole\Resetters2\RebindHttpContainer;
-use HZEX\TpSwoole\Resetters2\RebindRouterContainer;
-use HZEX\TpSwoole\Resetters2\RebindValidate;
-use HZEX\TpSwoole\Resetters2\RebindViewContainer;
-use HZEX\TpSwoole\Resetters2\ResetApp;
-use HZEX\TpSwoole\Resetters2\ResetMiddleware;
-use HZEX\TpSwoole\Resetters2\ResetterContract;
+use HZEX\TpSwoole\Resetters\RebindHttpContainer;
+use HZEX\TpSwoole\Resetters\RebindRouterContainer;
+use HZEX\TpSwoole\Resetters\RebindValidate;
+use HZEX\TpSwoole\Resetters\RebindViewContainer;
+use HZEX\TpSwoole\Resetters\ResetApp;
+use HZEX\TpSwoole\Resetters\ResetMiddleware;
+use HZEX\TpSwoole\Resetters\ResetterContract;
 use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
 use RuntimeException;
 use Swoole\Http\Request;
@@ -178,10 +178,9 @@ class Http implements WorkerPluginContract, SwooleServerHttpInterface, EventSubs
             ->withFiles($req->files ?: [])
             ->setBaseUrl($req->server['request_uri'])
             ->setUrl($req->server['request_uri'] . $queryStr)
-            ->setPathinfo(ltrim($req->server['path_info'], '/'));
-
-        $request->withPost($req->post ?: $request->getInputData($request->getInput()));
-        $request->withPut($request->getInputData($request->getInput()));
+            ->setPathinfo(ltrim($req->server['path_info'], '/'))
+            ->withPost($req->post ?: $request->getInputData($request->getInput()))
+            ->withPut($request->getInputData($request->getInput()));
 
         // 覆盖内置请求实例命名
         $this->getApp()->instance(\think\Request::class, $request);

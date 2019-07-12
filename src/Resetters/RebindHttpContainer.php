@@ -1,6 +1,6 @@
 <?php
 
-namespace HZEX\TpSwoole\Resetters2;
+namespace HZEX\TpSwoole\Resetters;
 
 use think\App;
 use think\Container;
