@@ -14,6 +14,7 @@ namespace HZEX\TpSwoole\Command;
 use Exception;
 use HZEX\TpSwoole\Manager;
 use Swoole\Process;
+use Swoole\Server\Port;
 use think\console\Command;
 use think\console\Input;
 use think\console\input\Argument;
@@ -125,15 +126,15 @@ class ServerCommand extends Command
         }
 
         $this->output->writeln('Starting swoole server...');
-
-        $host = $this->config['server']['host'];
-        $port = $this->config['server']['port'];
         
         /** @var Manager $server */
         $server = $this->app->make(Manager::class);
         $server->initialize();
 
-        $this->output->writeln("Swoole Http && Websocket started: <{$host}:{$port}>");
+        /** @var Port $masterPorts */
+        $masterPorts = $server->getSwoole()->ports[0];
+
+        $this->output->writeln("Swoole Http && Websocket started: <{$masterPorts->host}:{$masterPorts->port}>");
         $this->output->writeln('You can exit with <info>`CTRL-C`</info>');
 
         $server->start();

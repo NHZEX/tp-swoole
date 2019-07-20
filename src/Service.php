@@ -6,6 +6,7 @@ namespace HZEX\TpSwoole;
 use HZEX\TpSwoole\Command\ServerCommand;
 use HZEX\TpSwoole\Tp\Log;
 use HZEX\TpSwoole\Tp\Request;
+use InvalidArgumentException;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Server as Server;
 use Swoole\WebSocket\Server as WebsocketServer;
@@ -69,18 +70,31 @@ class Service extends \think\Service
      */
     protected function createSwooleServer()
     {
-        $config = $this->app->config;
+        $config = $this->app->config->get('swoole.server');
 
-        $host = $config->get('swoole.server.host');
-        $port = $config->get('swoole.server.port');
-        $socketType = $config->get('swoole.server.socket_type', SWOOLE_SOCK_TCP);
-        $mode = $config->get('swoole.server.mode', SWOOLE_PROCESS);
+        if (empty($config['listen'])) {
+            $host = $config['host'];
+            $port = $config['port'];
+        } else {
+            if (false === strpos($config['listen'], ':')) {
+                $config['listen'] .= ':9501';
+            }
+            [$host, $port] = explode(':', $config['listen']);
+        }
+
+        if (false === filter_var($host, FILTER_VALIDATE_IP)) {
+            throw new InvalidArgumentException("rpc server listen host invalid: {$host}");
+        }
+        if (false === ctype_digit($port) || $port > 65535 || 1 > $port) {
+            throw new InvalidArgumentException("rpc server listen port invalid: {$port}");
+        }
+
+        $socketType = $config['socket_type'] ?? SWOOLE_SOCK_TCP;
+        $mode = $config['mode'] ?? SWOOLE_PROCESS;
 
         $server = $this->isWebsocket ? WebsocketServer::class : HttpServer::class;
-        static::$server = new $server($host, $port, $mode, $socketType);
+        static::$server = new $server($host, (int) $port, $mode, $socketType);
 
-        $options = $config->get('swoole.server.options');
-
-        static::$server->set($options);
+        static::$server->set($config['options'] ?? []);
     }
 }

@@ -24,7 +24,6 @@ use Swoole\Runtime;
 use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
 use think\App;
-use think\Container;
 use Throwable;
 
 class Manager implements SwooleServerInterface, SwooleServerHttpInterface, SwooleServerTaskInterface
@@ -401,23 +400,5 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
     public static function logServerError(Throwable $e)
     {
         echo $e->__toString();
-    }
-
-    /**
-     * 调试容器
-     * @param Container|App $container
-     * @param           $workerId
-     */
-    public static function debugContainer(Container $container, $workerId)
-    {
-        $debug = array_map(function ($val) use ($workerId) {
-            if (is_object($val)) {
-                return get_class($val) . ' = ' . hash('crc32', spl_object_hash($val) . $workerId);
-            } else {
-                return $val;
-            }
-        }, (array) $container->getIterator());
-        ksort($debug, SORT_STRING); // SORT_FLAG_CASE
-        $container->log->debug($debug);
     }
 }

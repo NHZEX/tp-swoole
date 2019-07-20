@@ -14,6 +14,7 @@ return [
         'destroy' => [],
     ],
     'server' => [
+        'listen' => null, // 监听(存在则优先)
         'host' => '0.0.0.0', // 监听地址
         'port' => 9501, // 监听端口
         'mode' => SWOOLE_PROCESS, // 运行模式 默认为SWOOLE_PROCESS
