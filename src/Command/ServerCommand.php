@@ -37,6 +37,7 @@ class ServerCommand extends Command
         $this->setName('server')
             ->addArgument('action', Argument::OPTIONAL, "conf|start|stop|restart|reload", 'start')
             ->addOption('daemon', 'd', Option::VALUE_NONE, 'Run the swoole server in daemon mode.')
+            ->addOption('no-check', 'c', Option::VALUE_NONE, 'no check environment')
             ->setDescription('Swoole Server for ThinkPHP');
 
         // 不执行事件循环
@@ -45,13 +46,13 @@ class ServerCommand extends Command
 
     public function execute(Input $input, Output $output)
     {
+        $this->config = Config::get('swoole');
         $action = $input->getArgument('action');
 
         if (false === $this->environment()) {
             $this->output->error("环境不符合要求");
             return 1;
         }
-        $this->init();
 
         if (in_array($action, ['conf', 'start', 'stop', 'reload', 'restart', 'health'])) {
             if (false === $this->$action()) {
@@ -93,16 +94,8 @@ class ServerCommand extends Command
             $existText = $exist ? '<error>[Err]</error>' : '[Yes]';
             $this->output->info("{$existText} Can't exist {$extension}");
         }
+        $this->output->info("--------------------------- ---- --------------------------------");
         return $success;
-    }
-
-    /**
-     * 初始化
-     */
-    protected function init()
-    {
-        $this->output->info("--------------------------- INIT --------------------------------");
-        $this->config = Config::get('swoole');
     }
 
     /**
