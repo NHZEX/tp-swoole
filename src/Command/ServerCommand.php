@@ -12,6 +12,7 @@
 namespace HZEX\TpSwoole\Command;
 
 use Exception;
+use HZEX\TpSwoole\Contract\ServiceHealthCheckInterface;
 use HZEX\TpSwoole\Manager;
 use Swoole\Process;
 use Swoole\Server\Port;
@@ -52,8 +53,10 @@ class ServerCommand extends Command
         }
         $this->init();
 
-        if (in_array($action, ['conf', 'start', 'stop', 'reload', 'restart'])) {
-            $this->$action();
+        if (in_array($action, ['conf', 'start', 'stop', 'reload', 'restart', 'health'])) {
+            if (false === $this->$action()) {
+                return 1;
+            }
             if (false === in_array($action, ['start', 'restart'])) {
                 // 不执行事件循环
                 swoole_event_exit();
@@ -178,6 +181,33 @@ class ServerCommand extends Command
         }
 
         $this->start();
+    }
+
+    /**
+     * 健康检查
+     */
+    protected function health(): bool
+    {
+        $pid = $this->getMasterPid();
+        if (false === $this->isRunning($pid)) {
+            $this->output->writeln('service is not running');
+            return false;
+        }
+
+        if (false === empty($this->config['health'])) {
+            /** @var ServiceHealthCheckInterface $health */
+            $health = $this->app->make($this->config['health']);
+            if (false === $health instanceof ServiceHealthCheckInterface) {
+                $this->output->error('invalid service health check handle: ' . $this->config['health']);
+                return false;
+            }
+            $result = $health->handle();
+            $status = $result ? '<info>正常</info>' : "<highlight>异常-{$health->getCode()}</highlight>";
+            $this->output->writeln("服务健康状态: [{$status}]");
+            $this->output->write($health->getMessage());
+            return $result;
+        }
+        return true;
     }
 
     /**
