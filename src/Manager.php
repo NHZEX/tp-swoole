@@ -24,11 +24,17 @@ use Swoole\Runtime;
 use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
 use think\App;
+use think\console\Output;
 use Throwable;
 
 class Manager implements SwooleServerInterface, SwooleServerHttpInterface, SwooleServerTaskInterface
 {
     use Concerns\MessageSwitchTrait;
+
+    /**
+     * @var Output
+     */
+    private $output;
 
     /**
      * @var App $app
@@ -175,6 +181,24 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
             $this->initChildProcess[] = $this->app->make($process);
         }
         $this->mountProcess();
+    }
+
+    /**
+     * @param Output $output
+     * @return void
+     */
+    public function setOutput(Output $output)
+    {
+        $this->output = $output;
+        return;
+    }
+
+    /**
+     * @return Output|null
+     */
+    public function getOutput(): ?Output
+    {
+        return $this->output;
     }
 
     /**

@@ -125,6 +125,7 @@ class ServerCommand extends Command
         
         /** @var Manager $server */
         $server = $this->app->make(Manager::class);
+        $server->setOutput($this->output);
         $server->initialize();
 
         /** @var Port $masterPorts */
