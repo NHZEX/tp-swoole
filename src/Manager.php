@@ -5,7 +5,7 @@ namespace HZEX\TpSwoole;
 use Closure;
 use Exception;
 use HZEX\TpSwoole\Facade\Server as ServerFacade;
-use HZEX\TpSwoole\Process\Child\FileMonitor;
+use HZEX\TpSwoole\Process\Child\FileWatch;
 use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
 use HZEX\TpSwoole\Swoole\SwooleServerInterface;
 use HZEX\TpSwoole\Swoole\SwooleServerTaskInterface;
@@ -174,8 +174,8 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
      */
     protected function initProcess()
     {
-        if ($this->config['auto_reload'] ?? false) {
-            $this->initChildProcess[] = $this->app->make(FileMonitor::class);
+        if ($this->config['hot_reload'] ?? false) {
+            $this->initChildProcess[] = $this->app->make(FileWatch::class);
         }
         foreach ($this->config['process'] ?? [] as $process) {
             $this->initChildProcess[] = $this->app->make($process);

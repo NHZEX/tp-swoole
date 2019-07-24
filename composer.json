@@ -20,6 +20,7 @@
         "ext-sockets": "*",
         "ext-swoole": "~4.3",
         "open-smf/connection-pool": "~1.0",
+        "symfony/finder": "^4.3",
         "topthink/framework": "6.0.x-dev#661510f51894f0f755e531fa792449780ed7d960",
         "topthink/think-helper": "^3.0",
         "topthink/think-orm": "^2.0"

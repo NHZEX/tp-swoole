@@ -3,7 +3,7 @@
 use think\facade\Env;
 
 return [
-    'auto_reload' => false,
+    'hot_reload' => false,
     'enable_coroutine' => false,
     'resetters' => [],
     'penetrates' => [],

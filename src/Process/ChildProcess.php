@@ -90,7 +90,7 @@ abstract class ChildProcess implements ChildProcessInterface
         go(function () use ($process) {
             $ref = $this->processBox($process);
             $this->exitCode = null === $ref ? 0 : $ref;
-            $process->exit($this->exitCode);
+            $process->exit((int) $this->exitCode);
         });
 
         return;
