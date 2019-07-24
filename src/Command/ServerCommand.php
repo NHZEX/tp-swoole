@@ -35,7 +35,7 @@ class ServerCommand extends Command
     public function configure()
     {
         $this->setName('server')
-            ->addArgument('action', Argument::OPTIONAL, "conf|start|stop|restart|reload", 'start')
+            ->addArgument('action', Argument::OPTIONAL, "conf|start|stop|restart|reload|health", 'start')
             ->addOption('daemon', 'd', Option::VALUE_NONE, 'Run the swoole server in daemon mode.')
             ->addOption('no-check', 'c', Option::VALUE_NONE, 'no check environment')
             ->setDescription('Swoole Server for ThinkPHP');
@@ -58,13 +58,11 @@ class ServerCommand extends Command
             if (false === $this->$action()) {
                 return 1;
             }
-            if (false === in_array($action, ['start', 'restart'])) {
-                // 不执行事件循环
-                swoole_event_exit();
-            }
+            // 停止事件循环 TODO 未完全确定这个操作是正确的
+            swoole_event_exit();
         } else {
             $output->writeln(
-                "<error>Invalid argument action:{$action}, Expected conf|start|stop|restart|reload .</error>"
+                "<error>Invalid argument action:{$action}, Expected conf|start|stop|restart|reload|health .</error>"
             );
         }
         return 0;
@@ -135,7 +133,6 @@ class ServerCommand extends Command
         $this->output->writeln('You can exit with <info>`CTRL-C`</info>');
 
         $server->start();
-
         return true;
     }
 

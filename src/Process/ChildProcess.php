@@ -16,7 +16,7 @@ abstract class ChildProcess implements ChildProcessInterface
     protected $app;
     /** @var Manager */
     protected $manager;
-    /** @var Server|\Swoole\Server|\Swoole\WebSocket\Server  */
+    /** @var Server|\Swoole\Server|\Swoole\WebSocket\Server */
     protected $swoole;
     /** @var Process */
     protected $process;
@@ -113,7 +113,7 @@ abstract class ChildProcess implements ChildProcessInterface
 
         if (false == Process::kill($mpid, 0)) {
             echo "manager process [{$mpid}] exited, I [{$process->pid}] also quit\n";
-            $process->exit();
+            $process->exit(128);
         }
 
         return true;

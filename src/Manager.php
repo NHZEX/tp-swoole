@@ -275,7 +275,6 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
      */
     public function onShutdown($server): void
     {
-        unlink($this->swoole->setting['pid_file']);
         // 事件触发
         $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
