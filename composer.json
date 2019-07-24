@@ -21,9 +21,9 @@
         "ext-swoole": "~4.3",
         "open-smf/connection-pool": "~1.0",
         "symfony/finder": "^4.3",
-        "topthink/framework": "6.0.x-dev#661510f51894f0f755e531fa792449780ed7d960",
         "topthink/think-helper": "^3.0",
-        "topthink/think-orm": "^2.0"
+        "topthink/framework": "6.0.x-dev#f0babbd6529a57d8043690d63aa9505ca8a2c60d",
+        "topthink/think-orm": "2.0.x-dev#d0649a61896ddd060e7a038b79b3481d8730ceff"
     },
     "require-dev": {
         "phpunit/phpunit": "^8",
