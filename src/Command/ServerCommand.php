@@ -49,7 +49,7 @@ class ServerCommand extends Command
         $this->config = Config::get('swoole');
         $action = $input->getArgument('action');
 
-        if (false === $this->environment()) {
+        if (false == $input->getOption('no-check') && false === $this->environment()) {
             $this->output->error("环境不符合要求");
             return 1;
         }
