@@ -20,6 +20,7 @@ use Swoole\Http\Response;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Http2\Request as H2Request;
 use Swoole\Http2\Response as H2Response;
+use Swoole\Process;
 use Swoole\Runtime;
 use Swoole\Server;
 use Swoole\Timer;
@@ -271,6 +272,11 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
         swoole_set_process_name('php-ps: master');
         // 事件触发
         $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
+        // 响应终端 ctrl+c
+        Process::signal(SIGINT, function () use ($server) {
+            echo PHP_EOL;
+            $server->shutdown();
+        });
     }
 
     /**

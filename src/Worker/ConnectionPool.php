@@ -147,6 +147,9 @@ class ConnectionPool implements WorkerPluginContract, SwooleServerWorkerInterfac
      */
     public function onWorkerStop($server, int $workerId): void
     {
+        if ($server->taskworker) {
+            return;
+        }
         $this->closeConnectionPools();
     }
 
