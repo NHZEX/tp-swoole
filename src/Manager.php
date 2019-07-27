@@ -22,6 +22,7 @@ use Swoole\Http2\Request as H2Request;
 use Swoole\Http2\Response as H2Response;
 use Swoole\Runtime;
 use Swoole\Server;
+use Swoole\Timer;
 use Swoole\WebSocket\Server as WsServer;
 use think\App;
 use think\console\Output;
@@ -75,7 +76,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
     protected $events = [
         'Start', 'Shutdown', // Server
         'ManagerStart', 'ManagerStop', // Manager
-        'WorkerStart', 'WorkerStop', 'WorkerExit', 'WorkerError', // Worker
+        'WorkerStart', 'WorkerStop', 'WorkerExit', 'WorkerError', 'WorkerExit', // Worker
         'PipeMessage', // Message
         'Task', 'Finish', // Task
         'Connect', 'Receive', 'Close', // Tcp
@@ -339,6 +340,22 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
         echo "{$type} stop\t#{$workerId}({$server->worker_pid})\n";
         // 事件触发
         $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
+    }
+
+    /**
+     * 工作进程退出（Worker/Task）
+     * @param     $server
+     * @param int $workerId
+     */
+    public function onWorkerExit($server, int $workerId): void
+    {
+        $type = $server->taskworker ? 'task' : 'worker';
+        echo "{$type} exit\t#{$workerId}({$server->worker_pid})\n";
+        // 事件触发
+
+        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
+        // 清理全部定时器
+        Timer::clearAll();
     }
 
     /**

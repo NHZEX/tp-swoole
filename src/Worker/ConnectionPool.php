@@ -151,6 +151,16 @@ class ConnectionPool implements WorkerPluginContract, SwooleServerWorkerInterfac
     }
 
     /**
+     * 工作进程退出（Worker）
+     * @param Server|HttpServer|WsServer $server
+     * @param int                        $workerId
+     */
+    public function onWorkerExit($server, int $workerId): void
+    {
+        $this->closeConnectionPools();
+    }
+
+    /**
      * 工作进程异常（Worker/Task）
      * @param Server|HttpServer|WsServer $server
      * @param int                        $workerId

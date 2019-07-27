@@ -24,6 +24,13 @@ interface SwooleServerWorkerInterface
     public function onWorkerStop($server, int $workerId): void;
 
     /**
+     * 工作进程终止（Worker/Task）
+     * @param Server|HttpServer|WsServer $server
+     * @param int                        $workerId
+     */
+    public function onWorkerExit($server, int $workerId): void;
+
+    /**
      * 工作进程异常（Worker/Task）
      * @param Server|HttpServer|WsServer $server
      * @param int                        $workerId
