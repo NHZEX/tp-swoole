@@ -9,6 +9,7 @@ use think\Facade;
  * Class Manager
  * @package HZEX\TpSwoole\Facade
  * @method \HZEX\TpSwoole\Manager instance() static
+ * @method string getInstanceId() static
  */
 class Manager extends Facade
 {

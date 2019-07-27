@@ -34,6 +34,11 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
     use Concerns\MessageSwitchTrait;
 
     /**
+     * @var string
+     */
+    private $instanceId;
+
+    /**
      * @var Output
      */
     private $output;
@@ -52,11 +57,6 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
      * @var array
      */
     private $config;
-
-    /**
-     * @var int $workerId
-     */
-    private $workerId;
 
     /**
      * 插件
@@ -92,6 +92,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
     {
         $this->app = $app;
 
+        $this->instanceId = crc32(spl_object_hash($this));
         $this->swoole = ServerFacade::instance();
         $this->config = $this->app->config->get('swoole');
         $this->subscribes = $this->config['events'] ?? [];
@@ -183,6 +184,14 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
             $this->initChildProcess[] = $this->app->make($process);
         }
         $this->mountProcess();
+    }
+
+    /**
+     * @return string
+     */
+    public function getInstanceId(): string
+    {
+        return $this->instanceId;
     }
 
     /**
@@ -329,8 +338,6 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
         echo "{$type} start\t#{$workerId}({$server->worker_pid})\n";
         // 设置进程名称
         swoole_set_process_name("php-ps: {$type}#{$workerId}");
-        // 设置当前工人Id
-        $this->workerId = $workerId;
         // 事件触发
         $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
