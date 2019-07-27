@@ -264,6 +264,9 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
      */
     public function onStart($server): void
     {
+        // 输出调试信息
+        echo "master start\t#{$server->master_pid}\n";
+        // 设置进程名称
         swoole_set_process_name('php-ps: master');
         // 事件触发
         $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
@@ -275,6 +278,8 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
      */
     public function onShutdown($server): void
     {
+        // 输出调试信息
+        echo "master shutdown\t#{$server->master_pid}\n";
         // 事件触发
         $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
@@ -285,6 +290,9 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
      */
     public function onManagerStart($server): void
     {
+        // 输出调试信息
+        echo "manager start\t#{$server->manager_pid}\n";
+        // 设置进程名称
         swoole_set_process_name('php-ps: manager');
         // 事件触发
         $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
@@ -296,6 +304,8 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
      */
     public function onManagerStop($server): void
     {
+        // 输出调试信息
+        echo "manager stop\t#{$server->manager_pid}\n";
         // 事件触发
         $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
@@ -308,7 +318,9 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
     public function onWorkerStart($server, int $workerId): void
     {
         $type = $server->taskworker ? 'task' : 'worker';
-        echo "{$type}\t#{$workerId}({$server->worker_pid})\n";
+        // 输出调试信息
+        echo "{$type} start\t#{$workerId}({$server->worker_pid})\n";
+        // 设置进程名称
         swoole_set_process_name("php-ps: {$type}#{$workerId}");
         // 设置当前工人Id
         $this->workerId = $workerId;
@@ -323,6 +335,8 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
      */
     public function onWorkerStop($server, int $workerId): void
     {
+        $type = $server->taskworker ? 'task' : 'worker';
+        echo "{$type} stop\t#{$workerId}({$server->worker_pid})\n";
         // 事件触发
         $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
     }
