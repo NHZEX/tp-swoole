@@ -1,6 +1,6 @@
 <?php
 
-use think\facade\Env;
+use think\facade\App;
 
 return [
     'hot_reload' => false,
@@ -29,12 +29,17 @@ return [
             'task_worker_num' => 4,
             'task_enable_coroutine' => false,
 
-            'pid_file' => Env::get('runtime_path') . 'swoole.pid',
-            'log_file' => Env::get('runtime_path') . 'swoole.log',
+            'pid_file' => App::getRuntimePath() . 'swoole.pid',
+            'log_file' => App::getRuntimePath() . 'swoole.log',
 
+            // 启用Http响应压缩
+            'http_compression' => true,
+            // 启用静态文件处理
             'enable_static_handler' => true,
-            'document_root' => Env::get('root_path') . 'public',
-            // 'static_handler_locations' => ['/static', '/upload', '/favicon.ico', '/robots.txt'],
+            // 设置静态文件根目录
+            'document_root' => App::getRootPath() . 'public',
+            // 设置静态处理器的路径
+            'static_handler_locations' => ['/static', '/upload', '/favicon.ico', '/robots.txt'],
 
             //心跳检测：每60秒遍历所有连接，强制关闭10分钟内没有向服务器发送任何数据的连接
             'heartbeat_check_interval' => 60,

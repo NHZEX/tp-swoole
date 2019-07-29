@@ -212,13 +212,7 @@ class Http implements WorkerPluginContract, SwooleServerHttpInterface, EventSubs
             );
         }
 
-        $content = $thinkResponse->getContent();
-
-        if (!empty($content)) {
-            $swooleResponse->write($content);
-        }
-
-        $swooleResponse->end();
+        $swooleResponse->end($thinkResponse->getContent());
     }
 
     /**
@@ -230,7 +224,6 @@ class Http implements WorkerPluginContract, SwooleServerHttpInterface, EventSubs
         /** @var \think\Http $http */
         $http = $this->getApp()->make(\think\Http::class);
         $response = $http->run($request);
-        $response->getContent();
         $http->end($response);
         return $response;
     }
@@ -264,9 +257,7 @@ class Http implements WorkerPluginContract, SwooleServerHttpInterface, EventSubs
             } else {
                 $this->logServerError($e);
             }
-        } /*finally {
-            // $sandbox->clear();
-        }*/
+        }
     }
 
     public function requestEnd()
