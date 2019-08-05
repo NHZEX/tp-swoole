@@ -19,7 +19,6 @@ use ReflectionException;
 use ReflectionObject;
 use RuntimeException;
 use think\App;
-use think\Cache;
 use think\Config;
 use think\Console;
 use think\Container;
@@ -56,7 +55,6 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         Container::class,
         VirtualContainer::class,
         Config::class,
-        Cache::class,
         Console::class,
         Env::class,
         Event::class,
