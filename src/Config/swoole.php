@@ -14,6 +14,7 @@ return [
         'destroy' => [],
     ],
     'health' => null,
+    'memory_limit' => '512M',
     'server' => [
         'listen' => null, // 监听(存在则优先)
         'host' => '0.0.0.0', // 监听地址

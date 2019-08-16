@@ -97,6 +97,9 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
         $this->config = $this->app->config->get('swoole');
         $this->subscribes = $this->config['events'] ?? [];
         $this->plugins = array_merge($this->plugins, $this->config['plugins'] ?? []);
+
+        // 设置运行时内存限制
+        ini_set('memory_limit', $this->config['memory_limit'] ?: '512M');
     }
 
     /**

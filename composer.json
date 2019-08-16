@@ -22,8 +22,8 @@
         "open-smf/connection-pool": "~1.0",
         "symfony/finder": "^4.3",
         "topthink/think-helper": "^3.0",
-        "topthink/framework": "6.0.x-dev#a38ebc73724c2da464b1fcee651f970dcc7a85f4",
-        "topthink/think-orm": "2.0.x-dev#f47c3d4f2c38f6957d55fab50905f7f9fd74d7cb"
+        "topthink/framework": "6.0.x-dev#949fb11045a6633b73b9fd44daa2d28313efbdd8",
+        "topthink/think-orm": "^2.0.23"
     },
     "require-dev": {
         "phpunit/phpunit": "^8",
