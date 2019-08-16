@@ -189,6 +189,8 @@ class Http implements WorkerPluginContract, SwooleServerHttpInterface, EventSubs
 
     protected function sendResponse(\think\Response $thinkResponse, Response $swooleResponse)
     {
+        // 获取数据
+        $data = $thinkResponse->getContent();
 
         // 发送Header
         foreach ($thinkResponse->getHeader() as $key => $val) {
@@ -212,7 +214,7 @@ class Http implements WorkerPluginContract, SwooleServerHttpInterface, EventSubs
             );
         }
 
-        $swooleResponse->end($thinkResponse->getContent());
+        $swooleResponse->end($data);
     }
 
     /**
