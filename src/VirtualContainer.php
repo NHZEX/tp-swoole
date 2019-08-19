@@ -129,7 +129,7 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
             if (in_array($class, $this->penetrates)) {
                 $instancesVlaue[$class] = $object;
             } else {
-                $instancesVlaue[$class] = clone $object;
+                unset($instancesVlaue[$class]);
             }
         }
         $instances->setValue($newContainer, $instancesVlaue);

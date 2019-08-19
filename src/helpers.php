@@ -25,9 +25,9 @@ if (!function_exists('debug_array')) {
     {
         foreach ($data as &$item) {
             if (is_array($item)) {
-                $item = debug_array($item);
+                $item = debug_array($item, $display);
             } else {
-                $item = trim(debug_object($item));
+                $item = trim(debug_object($item, $display));
             }
         }
         $content = $data;

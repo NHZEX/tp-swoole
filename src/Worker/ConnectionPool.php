@@ -4,13 +4,13 @@ declare(strict_types=1);
 namespace HZEX\TpSwoole\Worker;
 
 use Closure;
+use HZEX\TpSwoole\ConnectionPool\CoroutineMySQLConnector;
 use HZEX\TpSwoole\Event;
 use HZEX\TpSwoole\EventSubscribeInterface;
 use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\Swoole\SwooleServerWorkerInterface;
 use Smf\ConnectionPool\ConnectionPool as SmfConnectionPool;
 use Smf\ConnectionPool\ConnectionPoolTrait;
-use Smf\ConnectionPool\Connectors\CoroutineMySQLConnector;
 use Smf\ConnectionPool\Connectors\PhpRedisConnector;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Server;

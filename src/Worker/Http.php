@@ -14,6 +14,7 @@ use HZEX\TpSwoole\Resetters\RebindValidate;
 use HZEX\TpSwoole\Resetters\RebindViewContainer;
 use HZEX\TpSwoole\Resetters\ResetApp;
 use HZEX\TpSwoole\Resetters\ResetMiddleware;
+use HZEX\TpSwoole\Resetters\ResetModel;
 use HZEX\TpSwoole\Resetters\ResetterContract;
 use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
 use RuntimeException;
@@ -117,6 +118,7 @@ class Http implements WorkerPluginContract, SwooleServerHttpInterface, EventSubs
             // ClearInstances::class,
             ResetApp::class,
             ResetMiddleware::class,
+            ResetModel::class,
             RebindHttpContainer::class,
             RebindRouterContainer::class,
             RebindViewContainer::class,
