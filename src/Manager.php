@@ -133,6 +133,7 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
                 /** @var WorkerPluginContract $plugin */
                 $plugin = $this->app->make($plugin);
             }
+            echo 'init plugins: ' . get_class($plugin) . PHP_EOL;
             if (false === $plugin instanceof WorkerPluginContract) {
                 throw new Exception('无效插件: ' . get_class($plugin));
             }

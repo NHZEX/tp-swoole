@@ -18,11 +18,12 @@
         "ext-pcntl": "*",
         "ext-pdo": "*",
         "ext-sockets": "*",
-        "ext-swoole": "~4.3",
+        "ext-swoole": "~4.4",
         "open-smf/connection-pool": "~1.0",
+        "psr/log": "^1.1",
         "symfony/finder": "^4.3",
-        "topthink/think-helper": "^3.0",
         "topthink/framework": "6.0.x-dev#949fb11045a6633b73b9fd44daa2d28313efbdd8",
+        "topthink/think-helper": "^3.0",
         "topthink/think-orm": "^2.0.23"
     },
     "require-dev": {

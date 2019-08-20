@@ -50,7 +50,7 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
      * 穿透容器副本的实例
      * @var array
      */
-    private $penetrates = [
+    private static $penetrates = [
         App::class,
         Container::class,
         VirtualContainer::class,
@@ -73,9 +73,17 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         /** @var Config $config */
         $config = static::$vinstance->make('config');
         $penetrates = $config->get('swoole.penetrates', []);
-        self::$vinstance->penetrates = array_merge(self::$vinstance->penetrates, $penetrates);
+        self::$penetrates = array_merge(self::$penetrates, $penetrates);
         $destroys = $config->get('swoole.container.destroy', []);
         self::$vinstance->setInitialDestroys($destroys);
+    }
+
+    /**
+     * @param string $className
+     */
+    public static function addPenetrate(string $className)
+    {
+        self::$penetrates[] = $className;
     }
 
     public function __construct(string $rootPath = '')
@@ -126,10 +134,10 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         /** @var array $instancesVlaue */
         $instancesVlaue = $instances->getValue($newContainer);
         foreach ($instancesVlaue as $class => $object) {
-            if (in_array($class, $this->penetrates)) {
+            if (in_array($class, self::$penetrates)) {
                 $instancesVlaue[$class] = $object;
             } else {
-                unset($instancesVlaue[$class]);
+                $instancesVlaue[$class] = clone $object;
             }
         }
         $instances->setValue($newContainer, $instancesVlaue);
