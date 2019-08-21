@@ -24,9 +24,4 @@ interface WorkerPluginContract
      * @return bool
      */
     public function prepare(Manager $manager): bool;
-
-
-    // public function workerStart(): void;
-
-    // public function workerStop(): void;
 }

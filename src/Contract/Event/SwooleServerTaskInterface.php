@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace HZEX\TpSwoole\Swoole;
+namespace HZEX\TpSwoole\Contract\Event;
 
 use Swoole\Http\Server as HttpServer;
 use Swoole\Server\Task;
 use Swoole\WebSocket\Server as WsServer;
 
-interface SwooleServerTaskInterface
+interface SwooleServerTaskInterface extends SwooleEventInterface
 {
     /**
      * 任务处理回调

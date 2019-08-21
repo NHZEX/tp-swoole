@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace HZEX\TpSwoole;
 
+use HZEX\TpSwoole\Contract\Event\SwooleEventInterface;
 use think\Container;
 
 /**
@@ -181,6 +182,8 @@ class Event
             if ($subscriber instanceof EventSubscribeInterface) {
                 // 手动订阅
                 $subscriber->subscribe($this);
+            } elseif ($subscriber instanceof SwooleEventInterface) {
+                // TODO 自动订阅Swoole
             } else {
                 // 智能订阅
                 $this->observe($subscriber);

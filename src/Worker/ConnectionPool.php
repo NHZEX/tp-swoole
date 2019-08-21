@@ -5,10 +5,10 @@ namespace HZEX\TpSwoole\Worker;
 
 use Closure;
 use HZEX\TpSwoole\ConnectionPool\CoroutineMySQLConnector;
+use HZEX\TpSwoole\Contract\Event\SwooleWorkerInterface;
 use HZEX\TpSwoole\Event;
 use HZEX\TpSwoole\EventSubscribeInterface;
 use HZEX\TpSwoole\Manager;
-use HZEX\TpSwoole\Swoole\SwooleServerWorkerInterface;
 use Smf\ConnectionPool\ConnectionPool as SmfConnectionPool;
 use Smf\ConnectionPool\ConnectionPoolTrait;
 use Smf\ConnectionPool\Connectors\PhpRedisConnector;
@@ -17,7 +17,7 @@ use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
 use think\Config;
 
-class ConnectionPool implements WorkerPluginContract, SwooleServerWorkerInterface, EventSubscribeInterface
+class ConnectionPool implements WorkerPluginContract, SwooleWorkerInterface, EventSubscribeInterface
 {
     use ConnectionPoolTrait;
 
@@ -174,15 +174,5 @@ class ConnectionPool implements WorkerPluginContract, SwooleServerWorkerInterfac
     public function onWorkerError($server, int $workerId, int $workerPid, int $exitCode, int $signal): void
     {
         $this->closeConnectionPools();
-    }
-
-    /**
-     * 工作进程收到消息
-     * @param Server|HttpServer|WsServer $server
-     * @param int                        $srcWorkerId
-     * @param mixed                      $message
-     */
-    public function onPipeMessage($server, int $srcWorkerId, $message): void
-    {
     }
 }

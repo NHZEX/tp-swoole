@@ -4,11 +4,13 @@ namespace HZEX\TpSwoole;
 
 use Closure;
 use Exception;
+use HZEX\TpSwoole\Contract\Event\SwooleHttpInterface;
+use HZEX\TpSwoole\Contract\Event\SwoolePipeMessageInterface;
+use HZEX\TpSwoole\Contract\Event\SwooleServerInterface;
+use HZEX\TpSwoole\Contract\Event\SwooleServerTaskInterface;
+use HZEX\TpSwoole\Contract\Event\SwooleWorkerInterface;
 use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use HZEX\TpSwoole\Process\Child\FileWatch;
-use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
-use HZEX\TpSwoole\Swoole\SwooleServerInterface;
-use HZEX\TpSwoole\Swoole\SwooleServerTaskInterface;
 use HZEX\TpSwoole\Tp\Log\Driver\SocketLog;
 use HZEX\TpSwoole\Worker\ConnectionPool;
 use HZEX\TpSwoole\Worker\Http;
@@ -30,7 +32,12 @@ use think\App;
 use think\console\Output;
 use Throwable;
 
-class Manager implements SwooleServerInterface, SwooleServerHttpInterface, SwooleServerTaskInterface
+class Manager implements
+    SwooleServerInterface,
+    SwooleWorkerInterface,
+    SwooleHttpInterface,
+    SwooleServerTaskInterface,
+    SwoolePipeMessageInterface
 {
     use Concerns\MessageSwitchTrait;
 

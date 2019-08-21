@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace HZEX\TpSwoole\Swoole;
+namespace HZEX\TpSwoole\Contract\Event;
 
 use Swoole\Http\Request;
-use Swoole\Http2\Request as H2Request;
 use Swoole\Http\Response;
+use Swoole\Http2\Request as H2Request;
 use Swoole\Http2\Response as H2Response;
 
-interface SwooleServerHttpInterface
+interface SwooleHttpInterface extends SwooleEventInterface
 {
     /**
      * 请求到达回调（Http）

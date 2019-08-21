@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace HZEX\TpSwoole\Swoole;
+namespace HZEX\TpSwoole\Contract\Event;
 
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\WebSocket\Frame;
 use Swoole\WebSocket\Server as WsServer;
 
-interface SwooleWebSocketInterface
+interface SwooleWebSocketInterface extends SwooleEventInterface
 {
     /**
      * 连接握手回调（WebSocket）

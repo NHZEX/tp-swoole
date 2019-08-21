@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace HZEX\TpSwoole\Swoole;
+namespace HZEX\TpSwoole\Contract\Event;
 
 use Swoole\Server;
 
-interface SwooleServerUdpInterface
+interface SwooleServerUdpInterface extends SwooleEventInterface
 {
     /**
      * 数据包到达回调（Udp）

@@ -5,6 +5,7 @@ namespace HZEX\TpSwoole\Worker;
 
 use Closure;
 use Exception;
+use HZEX\TpSwoole\Contract\Event\SwooleHttpInterface;
 use HZEX\TpSwoole\Event;
 use HZEX\TpSwoole\EventSubscribeInterface;
 use HZEX\TpSwoole\Manager;
@@ -16,7 +17,6 @@ use HZEX\TpSwoole\Resetters\ResetApp;
 use HZEX\TpSwoole\Resetters\ResetMiddleware;
 use HZEX\TpSwoole\Resetters\ResetModel;
 use HZEX\TpSwoole\Resetters\ResetterContract;
-use HZEX\TpSwoole\Swoole\SwooleServerHttpInterface;
 use RuntimeException;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
@@ -28,7 +28,7 @@ use think\console\Output;
 use think\exception\Handle;
 use Throwable;
 
-class Http implements WorkerPluginContract, SwooleServerHttpInterface, EventSubscribeInterface
+class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeInterface
 {
     /**
      * @var ResetterContract[]

@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace HZEX\TpSwoole\Swoole;
+namespace HZEX\TpSwoole\Contract\Event;
 
 use Swoole\Server;
 
-interface SwooleServerTcpInterface
+interface SwooleServerTcpInterface extends SwooleEventInterface
 {
     /**
      * 连接进入（Tcp）

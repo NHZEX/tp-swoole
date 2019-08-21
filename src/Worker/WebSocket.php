@@ -4,10 +4,10 @@ declare(strict_types=1);
 namespace HZEX\TpSwoole\Worker;
 
 use Closure;
+use HZEX\TpSwoole\Contract\Event\SwooleWebSocketInterface;
 use HZEX\TpSwoole\Event;
 use HZEX\TpSwoole\EventSubscribeInterface;
 use HZEX\TpSwoole\Manager;
-use HZEX\TpSwoole\Swoole\SwooleWebSocketInterface;
 use HZEX\TpSwoole\WebSocket\HandlerContract;
 use HZEX\TpSwoole\WebSocket\HandShakeContract;
 use Swoole\Http\Request;
