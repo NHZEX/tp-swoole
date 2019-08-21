@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "da019954b1d1aec582668fd4ddcaa1c7",
+    "content-hash": "e2af7a4adb6fb67d8db3a6edc601550c",
     "packages": [
         {
             "name": "league/flysystem",
@@ -2194,7 +2194,7 @@
         "ext-pcntl": "*",
         "ext-pdo": "*",
         "ext-sockets": "*",
-        "ext-swoole": "~4.3"
+        "ext-swoole": "~4.4"
     },
     "platform-dev": []
 }

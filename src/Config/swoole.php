@@ -8,6 +8,7 @@ return [
     'resetters' => [],
     'penetrates' => [],
     'process' => [],
+    'tasks' => [],
     'events' => [],
     'pools' => [],
     'container' => [

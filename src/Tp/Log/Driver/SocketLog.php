@@ -11,7 +11,7 @@
 
 namespace HZEX\TpSwoole\Tp\Log\Driver;
 
-use Swoole\Server;
+use HZEX\TpSwoole\Task\SocketLogTask;
 use think\App;
 use think\contract\LogHandlerInterface;
 
@@ -282,15 +282,7 @@ class SocketLog implements LogHandlerInterface
             return curl_exec($ch);
         }
 
-        /** @var Server $server */
-        $server = $app->make('swoole.server');
-        $server->task([
-            'action' => static::class,
-            'host' => $host,
-            'port' => $this->port,
-            'address' => $address,
-            'message' => $message,
-        ]);
+        SocketLogTask::push($host, $this->port, $address, $message);
         return true;
     }
 }

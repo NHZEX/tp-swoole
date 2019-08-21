@@ -11,13 +11,13 @@ use HZEX\TpSwoole\Contract\Event\SwooleServerTaskInterface;
 use HZEX\TpSwoole\Contract\Event\SwooleWorkerInterface;
 use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use HZEX\TpSwoole\Process\Child\FileWatch;
-use HZEX\TpSwoole\Tp\Log\Driver\SocketLog;
+use HZEX\TpSwoole\Task\SocketLogTask;
+use HZEX\TpSwoole\Task\TaskInterface;
 use HZEX\TpSwoole\Worker\ConnectionPool;
 use HZEX\TpSwoole\Worker\Http;
 use HZEX\TpSwoole\Worker\WebSocket;
 use HZEX\TpSwoole\Worker\WorkerPluginContract;
 use Psr\Log\LoggerInterface;
-use Swoole\Coroutine\Http\Client;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Http\Server as HttpServer;
@@ -72,8 +72,15 @@ class Manager implements
     private $logger;
 
     /**
+     * @var array
+     */
+    private $tasks = [
+        SocketLogTask::class
+    ];
+
+    /**
      * 插件
-     * @var array $plugins
+     * @var array
      */
     private $plugins = [
         ConnectionPool::class,
@@ -109,6 +116,7 @@ class Manager implements
         $this->swoole = ServerFacade::instance();
         $this->config = $this->app->config->get('swoole');
         $this->subscribes = $this->config['events'] ?? [];
+        $this->tasks = array_merge($this->tasks, $this->config['tasks'] ?? []);
         $this->plugins = array_merge($this->plugins, $this->config['plugins'] ?? []);
 
         // 设置运行时内存限制
@@ -126,6 +134,8 @@ class Manager implements
         $this->initMessageSwitch();
         // 初始化插件
         $this->initPlugins();
+        // 注册任务处理
+        $this->registerTasks();
         // 注册系统事件触发
         $this->registerEvent();
         // 注册应用事件监听
@@ -162,6 +172,18 @@ class Manager implements
             $plugin->prepare($this);
         }
         $this->subscribes = array_merge($subscribe, $this->subscribes);
+    }
+
+    /**
+     * @throws Exception
+     */
+    protected function registerTasks()
+    {
+        foreach ($this->tasks as $task) {
+            if (!is_subclass_of($task, TaskInterface::class)) {
+                throw new Exception('无效任务: ' . $task);
+            }
+        }
     }
 
     /**
@@ -453,22 +475,16 @@ class Manager implements
      */
     public function onTask($server, Server\Task $task)
     {
-        $result = null;
-        if (is_array($task->data)) {
-            if (SocketLog::class === $task->data['action']) {
-                $cli = new Client($task->data['host'], $task->data['port']);
-                $cli->setMethod('POST');
-                $cli->setHeaders([
-                    'Host' => $task->data['host'],
-                    'Content-Type' => 'application/json;charset=UTF-8',
-                    'Accept' => 'text/html,application/xhtml+xml,application/xml',
-                    'Accept-Encoding' => 'gzip',
-                ]);
-                $cli->set(['timeout' => 3, 'keep_alive' => true]);
-                $cli->post($task->data['address'], $task->data['message']);
-                $result = $cli->statusCode;
-            }
+        if (!is_array($task->data)
+            || count($task->data) !== 2
+            || !in_array($task->data[0], $this->tasks, true)
+        ) {
+            $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
         }
+        [$action, $data] = $task->data;
+        /** @var TaskInterface $taskHandle */
+        $taskHandle = new $action($server, $task);
+        $result = $taskHandle->handle($data);
         //完成任务，结束并返回数据
         $task->finish($result);
     }
