@@ -14,6 +14,7 @@ use HZEX\TpSwoole\Worker\ConnectionPool;
 use HZEX\TpSwoole\Worker\Http;
 use HZEX\TpSwoole\Worker\WebSocket;
 use HZEX\TpSwoole\Worker\WorkerPluginContract;
+use Psr\Log\LoggerInterface;
 use Swoole\Coroutine\Http\Client;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
@@ -57,6 +58,11 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
      * @var array
      */
     private $config;
+
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
     /**
      * 插件
@@ -196,6 +202,14 @@ class Manager implements SwooleServerInterface, SwooleServerHttpInterface, Swool
     public function getInstanceId(): string
     {
         return $this->instanceId;
+    }
+
+    /**
+     * @param LoggerInterface $logger
+     */
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
     }
 
     /**

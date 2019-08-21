@@ -14,6 +14,7 @@ namespace HZEX\TpSwoole\Command;
 use Exception;
 use HZEX\TpSwoole\Contract\ServiceHealthCheckInterface;
 use HZEX\TpSwoole\Manager;
+use Psr\Log\LoggerInterface;
 use Swoole\Process;
 use Swoole\Server\Port;
 use think\console\Command;
@@ -123,7 +124,15 @@ class ServerCommand extends Command
         
         /** @var Manager $server */
         $server = $this->app->make(Manager::class);
+        // 设置输出
         $server->setOutput($this->output);
+        // 加载日志输出解决
+        if (!empty($this->config['resolveLogger'])
+            && function_exists($this->config['resolveLogger'])
+            && ($logger = call_user_func($this->config['resolveLogger'])) instanceof LoggerInterface
+        ) {
+            $server->setLogger($logger);
+        }
         $server->initialize();
 
         /** @var Port $masterPorts */
