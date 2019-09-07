@@ -9,6 +9,7 @@ use HZEX\TpSwoole\Contract\Event\SwooleHttpInterface;
 use HZEX\TpSwoole\Event;
 use HZEX\TpSwoole\EventSubscribeInterface;
 use HZEX\TpSwoole\Manager;
+use HZEX\TpSwoole\Resetters\RebindEventContainer;
 use HZEX\TpSwoole\Resetters\RebindHttpContainer;
 use HZEX\TpSwoole\Resetters\RebindRouterContainer;
 use HZEX\TpSwoole\Resetters\RebindValidate;
@@ -121,6 +122,7 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
             ResetModel::class,
             RebindHttpContainer::class,
             RebindRouterContainer::class,
+            RebindEventContainer::class,
             RebindViewContainer::class,
             RebindValidate::class,
             // BindRequest::class,
@@ -150,6 +152,10 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
         }
     }
 
+    /**
+     * @param Request $req
+     * @return \HZEX\TpSwoole\Tp\Request
+     */
     protected function prepareRequest(Request $req)
     {
         $header = $req->header ?: [];
@@ -170,7 +176,7 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
         // 重新实例化请求对象 处理swoole请求数据
         /** @var \HZEX\TpSwoole\Tp\Request $request */
         $request = $this->getApp()->request;
-        $queryStr = !empty($req->server['query_string']) ? '&' . $req->server['query_string'] : '';
+        $queryStr = !empty($req->server['query_string']) ? '?' . $req->server['query_string'] : '';
         $request = $request
             ->withHeader($header)
             ->withServer($server)
@@ -189,6 +195,10 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
         return $request;
     }
 
+    /**
+     * @param \think\Response $thinkResponse
+     * @param Response        $swooleResponse
+     */
     protected function sendResponse(\think\Response $thinkResponse, Response $swooleResponse)
     {
         // 获取数据

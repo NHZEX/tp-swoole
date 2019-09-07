@@ -22,7 +22,8 @@
         "open-smf/connection-pool": "~1.0",
         "psr/log": "^1.1",
         "symfony/finder": "^4.3",
-        "topthink/framework": "6.0.x-dev#949fb11045a6633b73b9fd44daa2d28313efbdd8",
+        "symfony/var-dumper": "^4.3",
+        "topthink/framework": "6.0.x-dev#ecd62899fade5fc269bf1d328fc6251ed21249c2",
         "topthink/think-helper": "^3.0",
         "topthink/think-orm": "^2.0.23"
     },

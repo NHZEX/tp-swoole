@@ -36,7 +36,7 @@ class Mysql extends PDO
         'charset'     => 'utf8mb4',
         'timeout'     => 10,
         'strict_type' => true,
-        // 'fetch_mode'  => true, // TODO ThinkPhp 不兼容
+        // 'fetch_mode'  => true, // TODO 暂无法实现该操作
     ];
 
     /**
