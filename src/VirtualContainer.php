@@ -13,6 +13,7 @@ use HZEX\TpSwoole\Container\Destroy\DestroyContract;
 use HZEX\TpSwoole\Container\Destroy\DestroyDbConnection;
 use HZEX\TpSwoole\Coroutine\CoDestroy;
 use HZEX\TpSwoole\Event as SwooleEvent;
+use HZEX\TpSwoole\Tp\Orm\Db;
 use HZEX\TpSwoole\Worker\ConnectionPool;
 use IteratorAggregate;
 use ReflectionException;
@@ -63,6 +64,7 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         Manager::class,
         ConnectionPool::class,
         'swoole.server',
+        Db::class,
     ];
 
     /**
