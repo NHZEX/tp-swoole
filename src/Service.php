@@ -5,6 +5,7 @@ namespace HZEX\TpSwoole;
 
 use HZEX\TpSwoole\Command\ServerCommand;
 use HZEX\TpSwoole\Tp\Log;
+use HZEX\TpSwoole\Tp\Orm\Db;
 use HZEX\TpSwoole\Tp\Request;
 use InvalidArgumentException;
 use Swoole\Http\Server as HttpServer;
@@ -46,6 +47,8 @@ class Service extends \think\Service
         if ($this->app->log instanceof \think\Log) {
             $this->app->instance(\think\Log::class, $this->app->make(Log::class));
         }
+        // 替换默认db实现，以更好的兼任协程
+        $this->app->bind('db', Db::class);
         return true;
     }
 
