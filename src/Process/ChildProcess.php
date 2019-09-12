@@ -152,8 +152,6 @@ abstract class ChildProcess implements ChildProcessInterface
     protected function stop(?int $signal)
     {
         echo "child process {$this->displayName()} receive signal：{$signal}\n";
-        // 异常管道监听
-        Event::del($this->process->pipe);
 
         $fun = function () {
             echo "child process {$this->displayName()}({$this->exitCode}) exit...\n";
@@ -161,13 +159,6 @@ abstract class ChildProcess implements ChildProcessInterface
             $this->stopRun = true;
             // 进程停止事件
             $this->processExit();
-            // 完成最终退出
-            if ($this->enableCoroutine) {
-                // 等待完成协程退出
-                while (null !== $this->stopRun) {
-                    Coroutine::sleep(1);
-                }
-            }
             echo "child process {$this->displayName()}({$this->exitCode}) stop\n";
             // 选择合适的退出方式
             if ($this->enableCoroutine) {
