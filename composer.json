@@ -19,6 +19,7 @@
         "ext-pdo": "*",
         "ext-sockets": "*",
         "ext-swoole": "~4.4",
+        "nhzex/n-helper": "^1.1",
         "open-smf/connection-pool": "~1.0",
         "psr/log": "^1.1",
         "symfony/finder": "^4.3",

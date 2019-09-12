@@ -1,6 +1,7 @@
 <?php
 
 use think\Container;
+use function HuangZx\debug_value;
 
 /**
  * 是否存在 swoole
@@ -15,163 +16,6 @@ function exist_swoole(): bool
     return $exist;
 }
 
-if (!function_exists('debug_array')) {
-    /**
-     * @param      $data
-     * @param bool $display
-     * @return mixed
-     */
-    function debug_array(iterable $data, $display = true)
-    {
-        foreach ($data as &$item) {
-            if (is_array($item)) {
-                $item = debug_array($item, $display);
-            } else {
-                $item = trim(debug_object($item, $display));
-            }
-        }
-        $content = $data;
-
-        if ($display) {
-            echo var_export($content, true);
-        }
-        return $content;
-    }
-}
-
-if (!function_exists('debug_object')) {
-    /**
-     * @param      $object
-     * @param bool $display
-     * @return string|null
-     */
-    function debug_object($object, $display = true)
-    {
-        $content = null;
-        if (false === is_object($object)) {
-            $content = 'debug: ' . gettype($object) . PHP_EOL;
-        } else {
-            $content = 'debug: ' . get_class($object) . '#' . hash('crc32', spl_object_hash($object)) . PHP_EOL;
-        }
-        if ($display) {
-            echo $content;
-        }
-        return $content;
-    }
-}
-
-if (!function_exists('debug_object_trace')) {
-    /**
-     * @param      $object
-     * @param bool $display
-     * @return string|null
-     */
-    function debug_object_trace($object, $display = true)
-    {
-        $debug = debug_backtrace(0, 10);
-        $debug = array_filter($debug, function ($val) {
-            if (isset($val['function']) && 'debug_object' === $val['function']) {
-                return false;
-            }
-            if (isset($val['file'])
-                && (
-                    false !== strpos($val['file'], 'think/Container.php')
-                    || false !== strpos($val['file'], 'src/VirtualContainer.php')
-                )
-            ) {
-                if (isset($val['class'])
-                    && 'think\Container' === $val['class']
-                    && (
-                        'make' === $val['function']
-                        || 'get' === $val['function']
-                        || 'getObjectParam' === $val['function']
-                        || 'bindParams' === $val['function']
-                        || 'invokeMethod' === $val['function']
-                        || 'invokeClass' === $val['function']
-                    )
-                ) {
-                    return false;
-                }
-            }
-            if (isset($val['file'])
-                && false !== strpos($val['file'], 'framework/src/helper.php')
-                && (
-                    'app' === $val['function']
-                    || 'think\Container' === $val['class']
-                )
-            ) {
-                return false;
-            }
-            if (isset($val['file'])
-                && false !== strpos($val['file'], 'src/think/Facade')
-            ) {
-                return false;
-            }
-
-            return true;
-        });
-        // var_dump($debug);
-        $info = array_pop($debug);
-        $info['file'] = $info['file'] ?? 'null';
-        $info['line'] = $info['line'] ?? '0';
-        $info['file'] = '...' . substr($info['file'], strlen($info['file']) - 20, strlen($info['file']));
-        $info['class'] = $info['class'] ?? 'null';
-        $info['function'] = $info['function'] ?? 'null';
-        $info['type'] = $info['type'] ?? '@';
-        $info['args'] = $info['args'] ?? [];
-        array_walk_recursive($info['args'], function (&$value) {
-            if (is_object($value)) {
-                $value = get_class($value);
-            }
-        });
-        $info['args'] = json_encode(
-            $info['args'],
-            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_ERROR_RECURSION
-        );
-        $infostr = "{$info['file']}[{$info['line']}]#{$info['class']}{$info['type']}{$info['function']}**";
-        $infostr .= "\t{$info['args']}";
-        $infostr .= "\t";
-
-
-        $content = null;
-        if (false === is_object($object)) {
-            $content = $infostr . '.debug: ' . gettype($object) . PHP_EOL;
-        } else {
-            $objid = hash('crc32', spl_object_hash($object));
-            $content = $infostr . '.debug: ' . get_class($object) . '#' . $objid . PHP_EOL;
-        }
-        if ($display) {
-            echo $content;
-        }
-        return $content;
-    }
-}
-
-if (!function_exists('debug_closure')) {
-    /** @noinspection PhpDocMissingThrowsInspection */
-    /**
-     * @param      $object
-     * @param bool $display
-     * @return string|null
-     */
-    function debug_closure($object, $display = true)
-    {
-        $content = null;
-        if (false === $object instanceof Closure) {
-            $content = 'debug: ' . gettype($object) . PHP_EOL;
-        } else {
-            /** @noinspection PhpUnhandledExceptionInspection */
-            $ref = new ReflectionFunction($object);
-            $thisClass = get_class($ref->getClosureThis());
-            $content = "debug: $thisClass@{$ref->getStartLine()}-{$ref->getEndLine()}\n";
-        }
-        if ($display) {
-            echo $content;
-        }
-        return $content;
-    }
-}
-
 if (!function_exists('debug_container_instance')) {
     /**
      * @param Container $container
@@ -184,7 +28,7 @@ if (!function_exists('debug_container_instance')) {
         }
         $debug = array_map(function ($val) use ($workerId) {
             if (is_object($val)) {
-                return get_class($val) . ' = ' . hash('crc32', spl_object_hash($val));
+                return get_class($val) . ' = #' . spl_object_id($val);
             } else {
                 return $val;
             }
@@ -218,7 +62,7 @@ if (!function_exists('debug_container_bind')) {
 
             $instances = array_map(function ($val) use ($workerId) {
                 if (is_object($val)) {
-                    return get_class($val) . ' = ' . hash('crc32', spl_object_hash($val));
+                    return get_class($val) . ' = #' . spl_object_id($val);
                 } else {
                     return $val;
                 }
@@ -254,7 +98,7 @@ if (!function_exists('debug_backtrace_ex')) {
         });
         array_walk_recursive($debug, function (&$value) {
             if (is_object($value)) {
-                $value = debug_object($value, false);
+                $value = debug_value($value);
             }
         });
         return $debug;
