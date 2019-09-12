@@ -41,7 +41,7 @@ class FileWatch extends ChildProcess
      * @param Process $process
      * @return bool
      */
-    protected function processBox(Process $process)
+    protected function processMain(Process $process)
     {
         $ignoreFiles = array_flip(get_included_files());
         swoole_set_process_name('php-ps: FileWatch');
@@ -75,5 +75,12 @@ class FileWatch extends ChildProcess
             $this->lastMtime = $lastMtime;
         }
         return true;
+    }
+
+    /**
+     * 进程停止
+     */
+    protected function processExit(): void
+    {
     }
 }
