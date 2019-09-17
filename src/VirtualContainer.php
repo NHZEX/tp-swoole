@@ -12,10 +12,10 @@ use Exception;
 use HZEX\TpSwoole\Container\Destroy\DestroyContract;
 use HZEX\TpSwoole\Container\Destroy\DestroyDbConnection;
 use HZEX\TpSwoole\Coroutine\CoDestroy;
-use HZEX\TpSwoole\Event as SwooleEvent;
 use HZEX\TpSwoole\Tp\Orm\Db;
 use HZEX\TpSwoole\Worker\ConnectionPool;
 use IteratorAggregate;
+use Psr\Container\ContainerInterface;
 use ReflectionException;
 use ReflectionObject;
 use RuntimeException;
@@ -27,6 +27,7 @@ use think\Env;
 use think\Event;
 use think\Lang;
 use Traversable;
+use unzxin\zswCore\Event as SwooleEvent;
 
 /**
  * Class VirtualContainer
@@ -52,8 +53,9 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
      * @var array
      */
     private static $penetrates = [
-        App::class,
+        ContainerInterface::class,
         Container::class,
+        App::class,
         VirtualContainer::class,
         Config::class,
         Console::class,

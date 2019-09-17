@@ -5,9 +5,6 @@ namespace HZEX\TpSwoole\Worker;
 
 use Closure;
 use Exception;
-use HZEX\TpSwoole\Contract\Event\SwooleHttpInterface;
-use HZEX\TpSwoole\Event;
-use HZEX\TpSwoole\EventSubscribeInterface;
 use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\Resetters\RebindEventContainer;
 use HZEX\TpSwoole\Resetters\RebindHttpContainer;
@@ -28,6 +25,9 @@ use think\App;
 use think\console\Output;
 use think\exception\Handle;
 use Throwable;
+use unzxin\zswCore\Contract\Events\SwooleHttpInterface;
+use unzxin\zswCore\Contract\EventSubscribeInterface;
+use unzxin\zswCore\Event;
 
 class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeInterface
 {
@@ -66,9 +66,9 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
     public function subscribe(Event $event): void
     {
         // 监听公共事件
-        $event->listen('swoole.onWorkerStart', Closure::fromCallable([$this, 'onStart']));
-        $event->listen('swoole.onWorkerError', Closure::fromCallable([$this, 'onError']));
-        $event->listen('swoole.onRequest', Closure::fromCallable([$this, 'onRequest']));
+        $event->onSwooleWorkerStart(Closure::fromCallable([$this, 'onStart']));
+        $event->onSwooleWorkerError(Closure::fromCallable([$this, 'onError']));
+        $event->onSwooleRequest(Closure::fromCallable([$this, 'onRequest']));
     }
 
     public function getApp(): App

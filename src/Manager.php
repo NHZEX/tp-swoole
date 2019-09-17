@@ -4,11 +4,6 @@ namespace HZEX\TpSwoole;
 
 use Closure;
 use Exception;
-use HZEX\TpSwoole\Contract\Event\SwooleHttpInterface;
-use HZEX\TpSwoole\Contract\Event\SwoolePipeMessageInterface;
-use HZEX\TpSwoole\Contract\Event\SwooleServerInterface;
-use HZEX\TpSwoole\Contract\Event\SwooleServerTaskInterface;
-use HZEX\TpSwoole\Contract\Event\SwooleWorkerInterface;
 use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use HZEX\TpSwoole\Process\Child\FileWatch;
 use HZEX\TpSwoole\Task\SocketLogTask;
@@ -31,6 +26,13 @@ use Swoole\WebSocket\Server as WsServer;
 use think\App;
 use think\console\Output;
 use Throwable;
+use unzxin\zswCore\Contract\Events\SwooleHttpInterface;
+use unzxin\zswCore\Contract\Events\SwoolePipeMessageInterface;
+use unzxin\zswCore\Contract\Events\SwooleServerInterface;
+use unzxin\zswCore\Contract\Events\SwooleServerTaskInterface;
+use unzxin\zswCore\Contract\Events\SwooleWorkerInterface;
+use unzxin\zswCore\Contract\EventSubscribeInterface;
+use unzxin\zswCore\Event;
 
 class Manager implements
     SwooleServerInterface,
@@ -97,7 +99,7 @@ class Manager implements
     protected $events = [
         'Start', 'Shutdown', // Server
         'ManagerStart', 'ManagerStop', // Manager
-        'WorkerStart', 'WorkerStop', 'WorkerExit', 'WorkerError', 'WorkerExit', // Worker
+        'WorkerStart', 'WorkerStop', 'WorkerExit', 'WorkerError', // Worker
         'PipeMessage', // Message
         'Task', 'Finish', // Task
         'Connect', 'Receive', 'Close', // Tcp
@@ -195,8 +197,8 @@ class Manager implements
             $listener = "on$event";
             $callback = method_exists($this, $listener)
                 ? Closure::fromCallable([$this, $listener])
-                : function () use ($listener) {
-                    $this->getEvent()->trigger("swoole.$listener", func_get_args());
+                : function () use ($event) {
+                    $this->getEvent()->triggerSwoole($event, func_get_args());
                 };
             $this->swoole->on($event, $callback);
         }
@@ -326,13 +328,13 @@ class Manager implements
         echo "master start\t#{$server->master_pid}\n";
         // 设置进程名称
         swoole_set_process_name('php-ps: master');
-        // 事件触发
-        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
         // 响应终端 ctrl+c
         Process::signal(SIGINT, function () use ($server) {
             echo PHP_EOL;
             $server->shutdown();
         });
+        // 事件触发
+        $this->getEvent()->trigSwooleStart(func_get_args());
     }
 
     /**
@@ -344,7 +346,7 @@ class Manager implements
         // 输出调试信息
         echo "master shutdown\t#{$server->master_pid}\n";
         // 事件触发
-        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigSwooleShutdown(func_get_args());
     }
 
     /**
@@ -358,7 +360,7 @@ class Manager implements
         // 设置进程名称
         swoole_set_process_name('php-ps: manager');
         // 事件触发
-        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigSwooleManagerStart(func_get_args());
     }
 
     /**
@@ -370,7 +372,7 @@ class Manager implements
         // 输出调试信息
         echo "manager stop\t#{$server->manager_pid}\n";
         // 事件触发
-        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigSwooleManagerStop(func_get_args());
     }
 
     /**
@@ -386,7 +388,7 @@ class Manager implements
         // 设置进程名称
         swoole_set_process_name("php-ps: {$type}#{$workerId}");
         // 事件触发
-        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigSwooleWorkerStart(func_get_args());
     }
 
     /**
@@ -399,7 +401,7 @@ class Manager implements
         $type = $server->taskworker ? 'task' : 'worker';
         echo "{$type} stop\t#{$workerId}({$server->worker_pid})\n";
         // 事件触发
-        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigSwooleWorkerStop(func_get_args());
     }
 
     /**
@@ -412,8 +414,7 @@ class Manager implements
         $type = $server->taskworker ? 'task' : 'worker';
         echo "{$type} exit\t#{$workerId}({$server->worker_pid})\n";
         // 事件触发
-
-        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigSwooleWorkerExit(func_get_args());
         // 清理全部定时器
         Timer::clearAll();
     }
@@ -430,7 +431,7 @@ class Manager implements
     {
         echo "WorkerError: $workerId, pid: $workerPid, execCode: $exitCode, signal: $signal\n";
         // 事件触发
-        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigSwooleWorkerError(func_get_args());
     }
 
     /**
@@ -442,7 +443,7 @@ class Manager implements
     public function onPipeMessage($server, int $srcWorkerId, $message): void
     {
         // 事件触发
-        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigSwoolePipeMessage(func_get_args());
     }
 
     /**
@@ -454,7 +455,7 @@ class Manager implements
     protected function onClose($server, int $fd, int $reactorId)
     {
         // 事件触发
-        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigSwooleClose(func_get_args());
     }
 
     /**
@@ -465,7 +466,7 @@ class Manager implements
     public function onRequest(Request $request, Response $response): void
     {
         // 事件触发
-        $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
+        $this->getEvent()->trigSwooleRequest(func_get_args());
     }
 
     /**
@@ -479,7 +480,7 @@ class Manager implements
             || count($task->data) !== 2
             || !in_array($task->data[0], $this->tasks, true)
         ) {
-            $this->getEvent()->trigger('swoole.' . __FUNCTION__, func_get_args());
+            $this->getEvent()->trigSwooleTask(func_get_args());
         }
         [$action, $data] = $task->data;
         /** @var TaskInterface $taskHandle */
@@ -498,6 +499,7 @@ class Manager implements
     public function onFinish($server, int $taskId, $data): void
     {
         // 未触发事件
+        $this->getEvent()->trigSwooleFinish(func_get_args());
     }
 
     /**

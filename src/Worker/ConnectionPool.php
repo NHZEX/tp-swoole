@@ -5,9 +5,6 @@ namespace HZEX\TpSwoole\Worker;
 
 use Closure;
 use HZEX\TpSwoole\ConnectionPool\CoroutineMySQLConnector;
-use HZEX\TpSwoole\Contract\Event\SwooleWorkerInterface;
-use HZEX\TpSwoole\Event;
-use HZEX\TpSwoole\EventSubscribeInterface;
 use HZEX\TpSwoole\Manager;
 use Smf\ConnectionPool\ConnectionPool as SmfConnectionPool;
 use Smf\ConnectionPool\ConnectionPoolTrait;
@@ -16,6 +13,9 @@ use Swoole\Http\Server as HttpServer;
 use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
 use think\Config;
+use unzxin\zswCore\Contract\Events\SwooleWorkerInterface;
+use unzxin\zswCore\Contract\EventSubscribeInterface;
+use unzxin\zswCore\Event;
 
 class ConnectionPool implements WorkerPluginContract, SwooleWorkerInterface, EventSubscribeInterface
 {
@@ -56,9 +56,9 @@ class ConnectionPool implements WorkerPluginContract, SwooleWorkerInterface, Eve
 
     public function subscribe(Event $event): void
     {
-        $event->listen('swoole.onWorkerStart', Closure::fromCallable([$this, 'onWorkerStart']));
-        $event->listen('swoole.onWorkerStop', Closure::fromCallable([$this, 'onWorkerStop']));
-        $event->listen('swoole.onWorkerError', Closure::fromCallable([$this, 'onWorkerError']));
+        $event->onSwooleWorkerStart(Closure::fromCallable([$this, 'onWorkerStart']));
+        $event->onSwooleWorkerStop(Closure::fromCallable([$this, 'onWorkerStop']));
+        $event->onSwooleWorkerError(Closure::fromCallable([$this, 'onWorkerError']));
     }
 
     /**

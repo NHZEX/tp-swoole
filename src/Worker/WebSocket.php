@@ -4,9 +4,6 @@ declare(strict_types=1);
 namespace HZEX\TpSwoole\Worker;
 
 use Closure;
-use HZEX\TpSwoole\Contract\Event\SwooleWebSocketInterface;
-use HZEX\TpSwoole\Event;
-use HZEX\TpSwoole\EventSubscribeInterface;
 use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\WebSocket\HandlerContract;
 use HZEX\TpSwoole\WebSocket\HandShakeContract;
@@ -17,6 +14,9 @@ use Swoole\WebSocket\Server as WsServer;
 use think\App;
 use think\Config;
 use Throwable;
+use unzxin\zswCore\Contract\Events\SwooleWebSocketInterface;
+use unzxin\zswCore\Contract\EventSubscribeInterface;
+use unzxin\zswCore\Event;
 
 class WebSocket implements WorkerPluginContract, SwooleWebSocketInterface, EventSubscribeInterface
 {
@@ -77,17 +77,17 @@ class WebSocket implements WorkerPluginContract, SwooleWebSocketInterface, Event
 
     public function subscribe(Event $event): void
     {
-        $event->listen('swoole.onWorkerStart', Closure::fromCallable([$this, 'onStart']));
-        $event->listen('swoole.onWorkerStop', Closure::fromCallable([$this, 'onStop']));
-        $event->listen('swoole.onOpen', Closure::fromCallable([$this, 'onOpen']));
-        $event->listen('swoole.onMessage', Closure::fromCallable([$this, 'onMessage']));
-        $event->listen('swoole.onClose', function (WsServer $server, $fd, int $reactorId): void {
+        $event->onSwooleWorkerStart(Closure::fromCallable([$this, 'onStart']));
+        $event->onSwooleWorkerStop(Closure::fromCallable([$this, 'onStop']));
+        $event->onSwooleOpen(Closure::fromCallable([$this, 'onOpen']));
+        $event->onSwooleMessage(Closure::fromCallable([$this, 'onMessage']));
+        $event->onSwooleClose(function (WsServer $server, $fd, int $reactorId): void {
             if ($server->isEstablished($fd)) {
                 $this->onClose($server, $fd, $reactorId);
             }
         });
         if ($this->handShakeHandle) {
-            $event->listen('swoole.onHandShake', Closure::fromCallable([$this, 'onHandShake']));
+            $event->onSwooleHandShake(Closure::fromCallable([$this, 'onHandShake']));
         }
     }
 

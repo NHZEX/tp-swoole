@@ -8,9 +8,12 @@ use HZEX\TpSwoole\Tp\Log;
 use HZEX\TpSwoole\Tp\Orm\Db;
 use HZEX\TpSwoole\Tp\Request;
 use InvalidArgumentException;
+use Psr\Container\ContainerInterface;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Server as Server;
 use Swoole\WebSocket\Server as WebsocketServer;
+use think\App;
+use unzxin\zswCore\Event as SwooleEvent;
 
 class Service extends \think\Service
 {
@@ -40,8 +43,13 @@ class Service extends \think\Service
             }
             return static::$server;
         });
+        $this->app->bind(ContainerInterface::class, App::class);
         $this->app->bind('manager', Manager::class);
         $this->app->bind('request', Request::class);
+
+        /** @var SwooleEvent $event */
+        $event = $this->app->make(SwooleEvent::class);
+        $event->setResolver(new EventResolver());
 
         // 替换默认日志实现
         if ($this->app->log instanceof \think\Log) {
