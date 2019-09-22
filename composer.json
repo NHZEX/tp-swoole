@@ -12,7 +12,7 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {
-        "php": "~7.2.10",
+        "php": "~7.2.20 || ~7.3.8",
         "ext-curl": "*",
         "ext-json": "*",
         "ext-pcntl": "*",
@@ -25,7 +25,7 @@
         "psr/log": "^1.1",
         "symfony/finder": "^4.3",
         "symfony/var-dumper": "^4.3",
-        "topthink/framework": "6.0.x-dev#ecd62899fade5fc269bf1d328fc6251ed21249c2",
+        "topthink/framework": "6.0.x-dev#9744571904a008bff8567d5fc929ed161cad0f8b",
         "topthink/think-helper": "^3.0",
         "topthink/think-orm": "^2.0.23"
     },

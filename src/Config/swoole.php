@@ -1,7 +1,5 @@
 <?php
 
-use think\facade\App;
-
 return [
     'hot_reload' => false,
     'enable_coroutine' => false,
@@ -32,15 +30,15 @@ return [
             'task_worker_num' => 4,
             'task_enable_coroutine' => false,
 
-            'pid_file' => App::getRuntimePath() . 'swoole.pid',
-            'log_file' => App::getRuntimePath() . 'swoole.log',
+            'pid_file' => runtime_path() . 'swoole.pid',
+            'log_file' => runtime_path() . 'swoole.log',
 
             // 启用Http响应压缩
             'http_compression' => true,
             // 启用静态文件处理
             'enable_static_handler' => true,
             // 设置静态文件根目录
-            'document_root' => App::getRootPath() . 'public',
+            'document_root' => root_path() . 'public',
             // 设置静态处理器的路径
             'static_handler_locations' => ['/static', '/upload', '/favicon.ico', '/robots.txt'],
 

@@ -10,7 +10,6 @@ use HZEX\TpSwoole\Resetters\RebindEventContainer;
 use HZEX\TpSwoole\Resetters\RebindHttpContainer;
 use HZEX\TpSwoole\Resetters\RebindRouterContainer;
 use HZEX\TpSwoole\Resetters\RebindValidate;
-use HZEX\TpSwoole\Resetters\RebindViewContainer;
 use HZEX\TpSwoole\Resetters\ResetApp;
 use HZEX\TpSwoole\Resetters\ResetMiddleware;
 use HZEX\TpSwoole\Resetters\ResetModel;
@@ -123,7 +122,6 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
             RebindHttpContainer::class,
             RebindRouterContainer::class,
             RebindEventContainer::class,
-            RebindViewContainer::class,
             RebindValidate::class,
             // BindRequest::class,
             // ResetConfig::class,

@@ -22,7 +22,6 @@ use think\console\Input;
 use think\console\input\Argument;
 use think\console\input\Option;
 use think\console\Output;
-use think\facade\Config;
 use Throwable;
 
 /**
@@ -47,7 +46,7 @@ class ServerCommand extends Command
 
     public function execute(Input $input, Output $output)
     {
-        $this->config = Config::get('swoole');
+        $this->config = $this->app->config->get('swoole');
         $action = $input->getArgument('action');
 
         if (false == $input->getOption('no-check') && false === $this->environment()) {

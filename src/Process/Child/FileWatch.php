@@ -8,7 +8,6 @@ use SplFileInfo;
 use Swoole\Coroutine;
 use Swoole\Process;
 use Symfony\Component\Finder\Finder;
-use think\facade\App;
 
 class FileWatch extends ChildProcess
 {
@@ -27,7 +26,7 @@ class FileWatch extends ChildProcess
 
     protected function init()
     {
-        $rootPath = App::getRootPath();
+        $rootPath = $this->app->getRootPath();
 
         $this->finder = new Finder();
         $this->finder->files()

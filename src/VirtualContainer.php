@@ -312,4 +312,9 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         $prop->setAccessible(true);
         return $prop->getValue($obj);
     }
+
+    public function runningInConsole()
+    {
+        return parent::runningInConsole() && !exist_swoole();
+    }
 }
