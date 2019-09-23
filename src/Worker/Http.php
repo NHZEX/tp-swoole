@@ -188,8 +188,6 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
             ->withPost($req->post ?: $request->getInputData($request->getInput()))
             ->withPut($request->getInputData($request->getInput()));
 
-        // 覆盖内置请求实例命名
-        $this->getApp()->instance(\think\Request::class, $request);
         return $request;
     }
 

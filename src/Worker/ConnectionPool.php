@@ -8,6 +8,7 @@ use HZEX\TpSwoole\ConnectionPool\CoroutineMySQLConnector;
 use HZEX\TpSwoole\Manager;
 use Smf\ConnectionPool\ConnectionPool as SmfConnectionPool;
 use Smf\ConnectionPool\ConnectionPoolTrait;
+use Smf\ConnectionPool\Connectors\ConnectorInterface;
 use Smf\ConnectionPool\Connectors\PhpRedisConnector;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Server;
@@ -108,6 +109,35 @@ class ConnectionPool implements WorkerPluginContract, SwooleWorkerInterface, Eve
                     'maxActive' => 20,
                 ],
                 new PhpRedisConnector,
+                $options
+            );
+            $smfRedisPool->init();
+            $this->addConnectionPool($name, $smfRedisPool);
+        } else {
+            $smfRedisPool = $this->getConnectionPool($name);
+        }
+        return $smfRedisPool;
+    }
+
+    /**
+     * @param ConnectorInterface $connector
+     * @param array              $options
+     * @param string             $name
+     * @return SmfConnectionPool
+     */
+    public function requestCustomize(ConnectorInterface $connector, array $options, ?string &$name): SmfConnectionPool
+    {
+        // 生成唯一命名
+        $name = hash('sha1', serialize($options));
+        // 获取连接池
+        if (false === $this->hasConnectionPool($name)) {
+            // All Redis connections: [4 workers * 5 = 20, 4 workers * 20 = 80]
+            $smfRedisPool = new SmfConnectionPool(
+                [
+                    'minActive' => 5,
+                    'maxActive' => 20,
+                ],
+                $connector,
                 $options
             );
             $smfRedisPool->init();
