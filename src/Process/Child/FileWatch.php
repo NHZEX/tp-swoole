@@ -32,13 +32,6 @@ class FileWatch extends ChildProcess
 
     protected function init()
     {
-        $this->finder = new Finder();
-        $this->finder->files()
-            ->name($this->config['name'] ?? ['*.php'])
-            ->notName($this->config['name'] ?? [])
-            ->in($this->config['include'] ?? [app_path()])
-            ->exclude($this->config['exclude'] ?? [])
-            ->files();
     }
 
     /**
@@ -47,6 +40,14 @@ class FileWatch extends ChildProcess
      */
     protected function processMain(Process $process)
     {
+        $this->finder = new Finder();
+        $this->finder->files()
+            ->name($this->config['name'] ?? ['*.php'])
+            ->notName($this->config['notName'] ?? [])
+            ->in($this->config['include'] ?? [app_path()])
+            ->exclude($this->config['exclude'] ?? [])
+            ->files();
+
         $ignoreFiles = array_flip(get_included_files());
         swoole_set_process_name('php-ps: FileWatch');
         echo "FileMonitor Process: {$process->pid}, Scanning...\n";
