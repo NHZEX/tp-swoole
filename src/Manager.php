@@ -218,8 +218,11 @@ class Manager implements
      */
     protected function initProcess()
     {
-        if ($this->config['hot_reload'] ?? false) {
-            $this->initChildProcess[] = $this->app->make(FileWatch::class);
+        if ($this->config['hot_reload']['enable'] ?? false) {
+            /** @var FileWatch $fw */
+            $fw = $this->app->make(FileWatch::class);
+            $fw->setConfig($this->config['hot_reload']);
+            $this->initChildProcess[] = $fw;
         }
         foreach ($this->config['process'] ?? [] as $process) {
             $this->initChildProcess[] = $this->app->make($process);

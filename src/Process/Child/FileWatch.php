@@ -11,6 +11,7 @@ use Symfony\Component\Finder\Finder;
 
 class FileWatch extends ChildProcess
 {
+    private $config = [];
     /**
      * @var int
      */
@@ -24,15 +25,19 @@ class FileWatch extends ChildProcess
      */
     private $finder;
 
+    public function setConfig(array $config)
+    {
+        $this->config = $config;
+    }
+
     protected function init()
     {
-        $rootPath = $this->app->getRootPath();
-
         $this->finder = new Finder();
         $this->finder->files()
-            ->name(['*.php'])
-            ->in([$rootPath . 'app', $rootPath . 'extend', $rootPath . 'vendor'])
-            ->exclude([])
+            ->name($this->config['name'] ?? ['*.php'])
+            ->notName($this->config['name'] ?? [])
+            ->in($this->config['include'] ?? [app_path()])
+            ->exclude($this->config['exclude'] ?? [])
             ->files();
     }
 

@@ -1,7 +1,13 @@
 <?php
 
 return [
-    'hot_reload' => false,
+    'hot_reload'  => [
+        'enable'  => false,
+        'name'    => ['*.php'],
+        'notName' => [],
+        'include' => [app_path()],
+        'exclude' => [],
+    ],
     'enable_coroutine' => false,
     'resetters' => [],
     'penetrates' => [],
