@@ -90,7 +90,7 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
      */
     public static function isHandleHttpRequest()
     {
-        return (Coroutine::getContext()['__http_request'] ?? -1) === Coroutine::getCid();
+        return (Coroutine::getContext()['__http_request'] ?? 0) === Coroutine::getCid();
     }
 
     /**

@@ -5,7 +5,7 @@ namespace HZEX\TpSwoole;
 use Closure;
 use Exception;
 use HZEX\TpSwoole\Facade\Server as ServerFacade;
-use HZEX\TpSwoole\Process\Child\FileWatch;
+use HZEX\TpSwoole\Process\Sub\FileWatch;
 use HZEX\TpSwoole\Task\SocketLogTask;
 use HZEX\TpSwoole\Task\TaskInterface;
 use HZEX\TpSwoole\Worker\ConnectionPool;
@@ -41,8 +41,6 @@ class Manager implements
     SwooleServerTaskInterface,
     SwoolePipeMessageInterface
 {
-    use Concerns\MessageSwitchTrait;
-
     /**
      * @var string
      */
@@ -95,6 +93,12 @@ class Manager implements
      */
     private $subscribes = [];
 
+    /**
+     * 进程池
+     * @var ProcessPool
+     */
+    private $processPool;
+
     /** @var array 支持的响应事件 */
     protected $events = [
         'Start', 'Shutdown', // Server
@@ -123,6 +127,8 @@ class Manager implements
 
         // 设置运行时内存限制
         ini_set('memory_limit', $this->config['memory_limit'] ?: '512M');
+
+        $this->processPool = new ProcessPool($this);
     }
 
     /**
@@ -132,8 +138,6 @@ class Manager implements
     {
         // 加载虚拟容器配置
         VirtualContainer::loadConfiguration();
-        // 初始进程事件交换机
-        $this->initMessageSwitch();
         // 初始化插件
         $this->initPlugins();
         // 注册任务处理
@@ -218,16 +222,20 @@ class Manager implements
      */
     protected function initProcess()
     {
+        $this->processPool->setDebug($this->app->isDebug());
+        $this->processPool->setLogger($this->logger);
+
         if ($this->config['hot_reload']['enable'] ?? false) {
             /** @var FileWatch $fw */
             $fw = $this->app->make(FileWatch::class);
             $fw->setConfig($this->config['hot_reload']);
-            $this->initChildProcess[] = $fw;
+            $this->processPool->add($fw);
         }
         foreach ($this->config['process'] ?? [] as $process) {
-            $this->initChildProcess[] = $this->app->make($process);
+            $this->processPool->add($this->app->make($process));
         }
-        $this->mountProcess();
+        $this->processPool->mount($this->swoole);
+
     }
 
     /**

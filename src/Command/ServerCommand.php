@@ -11,6 +11,7 @@
 
 namespace HZEX\TpSwoole\Command;
 
+use Closure;
 use Exception;
 use HZEX\TpSwoole\Contract\ServiceHealthCheckInterface;
 use HZEX\TpSwoole\Manager;
@@ -127,7 +128,7 @@ class ServerCommand extends Command
         $server->setOutput($this->output);
         // 加载日志输出解决
         if (!empty($this->config['resolveLogger'])
-            && function_exists($this->config['resolveLogger'])
+            && ($this->config['resolveLogger'] instanceof Closure || function_exists($this->config['resolveLogger']))
             && ($logger = call_user_func($this->config['resolveLogger'])) instanceof LoggerInterface
         ) {
             $server->setLogger($logger);

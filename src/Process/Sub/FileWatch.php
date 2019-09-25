@@ -1,15 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace HZEX\TpSwoole\Process\Child;
+namespace HZEX\TpSwoole\Process\Sub;
 
-use HZEX\TpSwoole\Process\ChildProcess;
+use HZEX\TpSwoole\Process\BaseSubProcess;
 use SplFileInfo;
 use Swoole\Coroutine;
-use Swoole\Process;
 use Symfony\Component\Finder\Finder;
 
-class FileWatch extends ChildProcess
+class FileWatch extends BaseSubProcess
 {
     private $config = [];
     /**
@@ -30,15 +29,10 @@ class FileWatch extends ChildProcess
         $this->config = $config;
     }
 
-    protected function init()
-    {
-    }
-
     /**
-     * @param Process $process
      * @return bool
      */
-    protected function processMain(Process $process)
+    protected function worker()
     {
         $this->finder = new Finder();
         $this->finder->files()
@@ -49,8 +43,9 @@ class FileWatch extends ChildProcess
             ->files();
 
         $ignoreFiles = array_flip(get_included_files());
-        swoole_set_process_name('php-ps: FileWatch');
-        echo "FileMonitor Process: {$process->pid}, Scanning...\n";
+
+        $output = $this->manager->getOutput();
+        $output->info("FileMonitor Process: {$this->process->pid}, Scanning...");
 
         while (true) {
             Coroutine::sleep($this->interval);
@@ -67,11 +62,11 @@ class FileWatch extends ChildProcess
                     } else {
                         $lastMtime = $file->getMTime();
                         if (isset($ignoreFiles[(string) $file])) {
-                            $this->manager->getOutput()->writeln("[update] $file <warning>ignore</warning>");
+                            $output->writeln("[update] $file <warning>ignore</warning>");
                             continue;
                         } else {
-                            $this->manager->getOutput()->writeln("[update] $file <comment>reload</comment>");
-                            $this->swoole->reload();
+                            $output->writeln("[update] $file <comment>reload</comment>");
+                            $this->manager->getSwoole()->reload();
                             break;
                         }
                     }
@@ -83,9 +78,20 @@ class FileWatch extends ChildProcess
     }
 
     /**
-     * 进程停止
+     * 收到消息事件
+     * @param        $data
+     * @param string $form
+     * @return bool
      */
-    protected function processExit(): void
+    protected function onPipeMessage($data, ?string $form): bool
+    {
+        return true;
+    }
+
+    /**
+     * 进程退出
+     */
+    protected function onExit(): void
     {
     }
 }
