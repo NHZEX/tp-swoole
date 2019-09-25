@@ -14,6 +14,7 @@ use HZEX\TpSwoole\Container\Destroy\DestroyDbConnection;
 use HZEX\TpSwoole\Coroutine\CoDestroy;
 use HZEX\TpSwoole\Tp\Orm\Db;
 use HZEX\TpSwoole\Worker\ConnectionPool;
+use HZEX\TpSwoole\Worker\Http;
 use IteratorAggregate;
 use Psr\Container\ContainerInterface;
 use ReflectionException;
@@ -313,8 +314,11 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         return $prop->getValue($obj);
     }
 
+    /**
+     * @return bool
+     */
     public function runningInConsole()
     {
-        return parent::runningInConsole() && !exist_swoole();
+        return parent::runningInConsole() && !Http::isHandleHttpRequest();
     }
 }

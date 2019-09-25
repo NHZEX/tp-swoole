@@ -15,6 +15,7 @@ use HZEX\TpSwoole\Resetters\ResetMiddleware;
 use HZEX\TpSwoole\Resetters\ResetModel;
 use HZEX\TpSwoole\Resetters\ResetterContract;
 use RuntimeException;
+use Swoole\Coroutine;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
 use Swoole\Http\Server as HttpServer;
@@ -73,6 +74,23 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
     public function getApp(): App
     {
         return App::getInstance();
+    }
+
+    /**
+     * 设置当前协程正在处理Http请求
+     */
+    public static function setHandleHttpRequest()
+    {
+        Coroutine::getContext()['__http_request'] = Coroutine::getCid();
+    }
+
+    /**
+     * 当前协程是否处理Http请求
+     * @return bool
+     */
+    public static function isHandleHttpRequest()
+    {
+        return (Coroutine::getContext()['__http_request'] ?? -1) === Coroutine::getCid();
     }
 
     /**
@@ -247,6 +265,7 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
     public function onRequest(Request $sRequest, Response $sResponse): void
     {
         try {
+            self::setHandleHttpRequest();
             $request = $this->prepareRequest($sRequest);
             $this->resetApp();
             $response = $this->run($request);
