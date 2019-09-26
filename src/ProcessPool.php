@@ -26,7 +26,7 @@ class ProcessPool
     /**
      * @var BaseSubProcess[]
      */
-    protected $pool;
+    protected $pool = [];
     /**
      * @var int
      */
