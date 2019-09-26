@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "81d064c0752e58e5ddc23bf7f1ff0293",
+    "content-hash": "f731741792da1c3ea5c4cdd1402f67c4",
     "packages": [
         {
             "name": "league/flysystem",
@@ -213,16 +213,16 @@
         },
         {
             "name": "nhzex/zsw-core",
-            "version": "v1.0.0",
+            "version": "v1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/NHZEX/zsw-core.git",
-                "reference": "a2f2a09869b757291439a6b8af997abc28d1c816"
+                "reference": "982328253a511a6d3755a00113ab47a39b3c7621"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/NHZEX/zsw-core/zipball/a2f2a09869b757291439a6b8af997abc28d1c816",
-                "reference": "a2f2a09869b757291439a6b8af997abc28d1c816",
+                "url": "https://api.github.com/repos/NHZEX/zsw-core/zipball/982328253a511a6d3755a00113ab47a39b3c7621",
+                "reference": "982328253a511a6d3755a00113ab47a39b3c7621",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -232,6 +232,7 @@
                 ]
             },
             "require": {
+                "ext-sockets": "*",
                 "ext-swoole": "~4.4",
                 "php": "~7.1",
                 "psr/container": "^1.0"
@@ -259,7 +260,7 @@
                 }
             ],
             "description": "zx swoole core",
-            "time": "2019-09-17T06:07:41+00:00"
+            "time": "2019-09-26T05:51:34+00:00"
         },
         {
             "name": "open-smf/connection-pool",

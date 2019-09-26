@@ -9,14 +9,18 @@ use Exception;
 use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\ProcessPool;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 use Swoole\Coroutine;
 use Swoole\Process;
 use Swoole\Timer;
+use unzxin\zswCore\Process\IPCMessageTrait;
 use function HuangZx\debug_string;
 
 abstract class BaseSubProcess implements SubProcessInterface
 {
+    use IPCMessageTrait;
+
+    protected const UNSERIALIZE_ERROR_PREG = '/unserialize\(\): Error at offset (\d+) of (\d+) bytes/m';
+
     /**
      * @var int 工作ID
      */
@@ -29,10 +33,6 @@ abstract class BaseSubProcess implements SubProcessInterface
      * @var ProcessPool
      */
     protected $pool;
-    /**
-     * @var IPCMessage
-     */
-    private $pipeBuffer;
     /**
      * @var bool
      */
@@ -56,7 +56,7 @@ abstract class BaseSubProcess implements SubProcessInterface
 
     public function __construct()
     {
-        $this->pipeBuffer = new IPCMessage();
+        $this->initIPCMessage();
     }
 
     /**
@@ -230,51 +230,35 @@ abstract class BaseSubProcess implements SubProcessInterface
             $socket = $this->process->exportSocket();
 
             while ($this->running) {
-                if (!$recv = $socket->recv(IPCMessage::CHUNK_SIZE, 2.0)) {
-                    if (0 !== $socket->errCode && $socket->errCode !== SOCKET_ETIMEDOUT) {
-                        $output->error("socket recv error: ({$socket->errCode}){{$socket->errMsg}}");
+                try {
+                    if (null === $payload = $this->recvIPCMessage($socket, 2.0)) {
+                        continue;
                     }
+                } catch (Exception $e) {
+                    $this->logger->error("ipc message error: ({$e->getCode()}){$e->getMessage()}");
                     continue;
                 }
-                // 从解析器中获取数据帧
-                if ($payload = $this->pipeBuffer->read($recv)) {
-                    // 业务处理
-                    if (is_array($payload) && $this->recvMessage($payload)) {
-                        continue;
-                    };
-                    if ($this->onPipeMessage($payload, null)) {
-                        continue;
-                    };
-                    $payload = substr($payload, 0, 64);
-                    $output->warning("Unable process message: $payload");
+                [, $from, $data] = $payload;
+                try {
+                    $data = unserialize($data);
+                } catch (Exception $exception) {
+                    $message = $exception->getMessage();
+                    if ($this->debug && preg_match_all(self::UNSERIALIZE_ERROR_PREG, $message, $matches)) {
+                        $message .= sprintf(
+                            ' <unserialize error at offset %d of: (%d) -> %s>',
+                            $matches[1][0],
+                            $matches[2][0],
+                            debug_string($data, (int) $matches[2][0], 32)
+                        );
+                    }
+                    $output->warning("ipc message unserialize failure: " . $message);
+                    continue;
+                }
+                if ($this->onPipeMessage($data, $this->pool->getWorkerName($from))) {
+                    continue;
                 }
             }
         });
-    }
-
-    /**
-     * 解析消息
-     * @param array $data
-     * @return bool
-     */
-    private function recvMessage(array $data): bool
-    {
-        $output = $this->manager->getOutput();
-        try {
-            [, $from, $payload] = $data;
-            $payload = unserialize($payload);
-        } catch (Exception $exception) {
-            $message = $exception->getMessage();
-            $output->warning("ipc message unserialize failure: " . $message);
-            if (preg_match_all('/unserialize\(\): Error at offset (\d+) of (\d+) bytes/m', $message, $matches)) {
-                $message = debug_string($payload, (int) $matches[2][0], 32);
-                $message = "unserialize error at offset {$matches[1][0]} of: ({$matches[2][0]}) -> {$message}";
-                $output->error($message);
-            }
-            return false;
-        }
-        $this->onPipeMessage($payload, $this->pool->getWorkerName($from));
-        return true;
     }
 
     /**
@@ -284,18 +268,9 @@ abstract class BaseSubProcess implements SubProcessInterface
      */
     protected function sendMessage($data, string $pipeName)
     {
-        $data = serialize($data);
         $socker = $this->pool->getWorkerSocket($pipeName);
-        foreach ($this->pipeBuffer->generateMsgChunk($this->workerId, $data) as $chunk) {
-            $send_len = $socker->sendAll($chunk);
-            if (false === $send_len) {
-                throw new RuntimeException("data transmission failed: ({$socker->errCode}){$socker->errMsg}");
-            }
-            $len = strlen($chunk);
-            if ($send_len > $len) {
-                throw new RuntimeException("wrong data chunk transmission length {$len} !== {$send_len}");
-            }
-        }
+        $data = serialize($data);
+        $this->sendIPCMessage($socker, $this->workerId, $data);
     }
 
     /**
