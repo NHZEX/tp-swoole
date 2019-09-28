@@ -11,11 +11,11 @@
 
 namespace HZEX\TpSwoole\Command;
 
-use Closure;
 use Exception;
 use HZEX\TpSwoole\Contract\ServiceHealthCheckInterface;
+use HZEX\TpSwoole\Facade\ServerLogger;
+use HZEX\TpSwoole\Log\MonologConsoleHandler;
 use HZEX\TpSwoole\Manager;
-use Psr\Log\LoggerInterface;
 use Swoole\Process;
 use Swoole\Server\Port;
 use think\console\Command;
@@ -124,15 +124,16 @@ class ServerCommand extends Command
         
         /** @var Manager $server */
         $server = $this->app->make(Manager::class);
+        $logger = ServerLogger::instance();
+        // 设置日志
+        if ($this->config['log']['console'] ?? false) {
+            $handlerConsole = new MonologConsoleHandler($this->output);
+            $handlerConsole->setEnable(true);
+            $logger->pushHandler($handlerConsole);
+        }
         // 设置输出
         $server->setOutput($this->output);
-        // 加载日志输出解决
-        if (!empty($this->config['resolveLogger'])
-            && ($this->config['resolveLogger'] instanceof Closure || function_exists($this->config['resolveLogger']))
-            && ($logger = call_user_func($this->config['resolveLogger'])) instanceof LoggerInterface
-        ) {
-            $server->setLogger($logger);
-        }
+        $server->setLogger($logger);
         $server->initialize();
 
         /** @var Port $masterPorts */
@@ -141,6 +142,7 @@ class ServerCommand extends Command
         $this->output->writeln("Swoole Http && Websocket started: <{$masterPorts->host}:{$masterPorts->port}>");
         $this->output->writeln('You can exit with <info>`CTRL-C`</info>');
 
+        MonologConsoleHandler::setDaemon($this->config['server']['options']['daemonize'] ?? false);
         $server->start();
         return true;
     }

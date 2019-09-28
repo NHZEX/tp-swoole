@@ -7,6 +7,8 @@ use HZEX\TpSwoole\Command\ServerCommand;
 use HZEX\TpSwoole\Tp\Orm\Db;
 use HZEX\TpSwoole\Tp\Request;
 use InvalidArgumentException;
+use Monolog\Handler\RotatingFileHandler;
+use Monolog\Logger;
 use Psr\Container\ContainerInterface;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Server as Server;
@@ -24,6 +26,7 @@ class Service extends \think\Service
      * @var Server|HttpServer|WebsocketServer
      */
     protected static $server;
+
     /**
      * 服务注册
      */
@@ -45,6 +48,8 @@ class Service extends \think\Service
         $this->app->bind(ContainerInterface::class, App::class);
         $this->app->bind('manager', Manager::class);
         $this->app->bind('request', Request::class);
+
+        $this->initLogger();
 
         /** @var SwooleEvent $event */
         $event = $this->app->make(SwooleEvent::class);
@@ -96,11 +101,42 @@ class Service extends \think\Service
         }
 
         $socketType = $config['socket_type'] ?? SWOOLE_SOCK_TCP;
-        $mode = $config['mode'] ?? SWOOLE_PROCESS;
+        $mode       = $config['mode'] ?? SWOOLE_PROCESS;
 
-        $server = $this->isWebsocket ? WebsocketServer::class : HttpServer::class;
+        $server         = $this->isWebsocket ? WebsocketServer::class : HttpServer::class;
         static::$server = new $server($host, (int) $port, $mode, $socketType);
 
         static::$server->set($config['options'] ?? []);
+    }
+
+    protected function initLogger()
+    {
+        $config = [
+            // 日志保存目录
+            'path'      => runtime_path('logs'),
+            // 日志文件名
+            'filename'  => 'server.log',
+            // 最大日志文件数量
+            'max_files' => 7,
+        ];
+        $config = array_merge($config, $this->app->config->get('swoole.log.channel', []));
+
+        if (!empty($config['path'])
+            && strrpos($config['path'], DIRECTORY_SEPARATOR) !== strlen($config['path']) - 1
+        ) {
+            $config['path'] .= DIRECTORY_SEPARATOR;
+        }
+
+        // 初始化日志
+        $handler = new RotatingFileHandler(
+            $config['path'] . $config['filename'],
+            $config['max_files']
+        );
+
+        $logger = new Logger('OPS');
+        $logger->pushHandler($handler);
+
+        $this->app->instance(Logger::class, $logger);
+        $this->app->bind('monolog', Logger::class);
     }
 }

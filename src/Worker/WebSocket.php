@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace HZEX\TpSwoole\Worker;
 
 use Closure;
+use HZEX\TpSwoole\Log\MonologErrorHandler;
 use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\WebSocket\HandlerContract;
 use HZEX\TpSwoole\WebSocket\HandShakeContract;
@@ -40,6 +41,10 @@ class WebSocket implements WorkerPluginContract, SwooleWebSocketInterface, Event
     private $handShakeHandle = false;
     /** @var WsServer */
     private $server;
+    /**
+     * @var MonologErrorHandler
+     */
+    private $exceptionRecord;
 
     public function __construct(App $app, Config $config)
     {
@@ -72,6 +77,7 @@ class WebSocket implements WorkerPluginContract, SwooleWebSocketInterface, Event
         $event[] = 'Open';
         $event[] = 'Message';
         $manager->withEvents($event);
+        $this->exceptionRecord = $manager->getExceptionRecord();
         return true;
     }
 
@@ -159,7 +165,7 @@ class WebSocket implements WorkerPluginContract, SwooleWebSocketInterface, Event
         try {
             $this->handle->onMessage($server, $frame);
         } catch (Throwable $e) {
-            Manager::logServerError($e);
+            $this->exceptionRecord->handleException($e);
         }
     }
 

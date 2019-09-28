@@ -145,7 +145,7 @@ abstract class BaseSubProcess implements SubProcessInterface
     protected function entrance()
     {
         $this->process->name("php-opsc: {$this->workerId}#{$this->displayName()}");
-        $this->manager->getOutput()->info("child process {$this->workerId}#{$this->displayName()} run");
+        $this->logger->info("child process {$this->workerId}#{$this->displayName()} run");
 
         // 响应 SIGINT ctrl+c
         Process::signal(SIGINT, Closure::fromCallable([$this, 'stop']));
@@ -169,7 +169,7 @@ abstract class BaseSubProcess implements SubProcessInterface
         $mpid = $this->pool->getMasterPid();
 
         if (false == Process::kill($mpid, 0)) {
-            $this->manager->getOutput()->warning("manager process [{$mpid}] exited, {$this->displayName()} also quit");
+            $this->logger->warning("manager process [{$mpid}] exited, {$this->displayName()} also quit");
             Process::kill($this->process->pid, SIGTERM);
             Timer::clear($this->checkMppidTime);
         }
@@ -183,19 +183,18 @@ abstract class BaseSubProcess implements SubProcessInterface
      */
     protected function stop(?int $signal)
     {
-        $output = $this->manager->getOutput();
-        $output->info("child process {$this->displayName()} receive signal：{$signal}");
+        $this->logger->info("child process {$this->displayName()} receive signal：{$signal}");
         $this->running = false;
 
-        Co::create(function () use ($signal, $output) {
-            $output->info("child process {$this->displayName()} exit...");
+        Co::create(function () use ($signal) {
+            $this->logger->info("child process {$this->displayName()} exit...");
 
             $this->onExit();
 
             // 等待所有协程退出
             $waitTime = microtime(true) + 8;
             foreach (Coroutine::list() as $cid) {
-                $output->info("wait coroutine #{$cid} exit...");
+                $this->logger->info("wait coroutine #{$cid} exit...");
                 if ($cid === Coroutine::getCid()) {
                     continue;
                 }
@@ -211,14 +210,14 @@ abstract class BaseSubProcess implements SubProcessInterface
                         $info['line'] = $info['line'] ?? 'null';
                         $info['function'] = $info['function'] ?? 'null';
                         $message = "{$info['file']}:{$info['line']}#{$info['function']}";
-                        $output->warning("coroutine #{$cid} time out: {$message}");
+                        $this->logger->warning("coroutine #{$cid} time out: {$message}");
                     } else {
-                        $output->warning("coroutine #{$cid} time out: does not exist");
+                        $this->logger->warning("coroutine #{$cid} time out: does not exist");
                     }
                 }
             }
 
-            $output->info("child process {$this->displayName()} exit");
+            $this->logger->info("child process {$this->displayName()} exit");
             $this->process->exit();
         });
     }
@@ -226,7 +225,6 @@ abstract class BaseSubProcess implements SubProcessInterface
     protected function listenPipeMessage()
     {
         Co::create(function () {
-            $output = $this->manager->getOutput();
             $socket = $this->process->exportSocket();
 
             while ($this->running) {
@@ -251,7 +249,7 @@ abstract class BaseSubProcess implements SubProcessInterface
                             debug_string($data, (int) $matches[2][0], 32)
                         );
                     }
-                    $output->warning("ipc message unserialize failure: " . $message);
+                    $this->logger->warning("ipc message unserialize failure: " . $message);
                     continue;
                 }
                 if ($this->onPipeMessage($data, $this->pool->getWorkerName($from))) {

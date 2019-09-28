@@ -5,6 +5,7 @@ namespace HZEX\TpSwoole;
 use Closure;
 use Exception;
 use HZEX\TpSwoole\Facade\Server as ServerFacade;
+use HZEX\TpSwoole\Log\MonologErrorHandler;
 use HZEX\TpSwoole\Process\Sub\FileWatch;
 use HZEX\TpSwoole\Task\SocketLogTask;
 use HZEX\TpSwoole\Task\TaskInterface;
@@ -25,7 +26,6 @@ use Swoole\Timer;
 use Swoole\WebSocket\Server as WsServer;
 use think\App;
 use think\console\Output;
-use Throwable;
 use unzxin\zswCore\Contract\Events\SwooleHttpInterface;
 use unzxin\zswCore\Contract\Events\SwoolePipeMessageInterface;
 use unzxin\zswCore\Contract\Events\SwooleServerInterface;
@@ -70,6 +70,11 @@ class Manager implements
      * @var LoggerInterface
      */
     private $logger;
+
+    /**
+     * @var MonologErrorHandler
+     */
+    private $exceptionRecord;
 
     /**
      * @var array
@@ -162,7 +167,7 @@ class Manager implements
                 /** @var WorkerPluginContract $plugin */
                 $plugin = $this->app->make($plugin);
             }
-            $this->output->info('init plugins: ' . get_class($plugin));
+            $this->logger->info('init plugins: ' . get_class($plugin));
             if (false === $plugin instanceof WorkerPluginContract) {
                 throw new Exception('无效插件: ' . get_class($plugin));
             }
@@ -252,6 +257,15 @@ class Manager implements
     public function setLogger(LoggerInterface $logger)
     {
         $this->logger = $logger;
+        $this->exceptionRecord = new MonologErrorHandler($logger);
+    }
+
+    /**
+     * @return LoggerInterface
+     */
+    public function getLogger(): LoggerInterface
+    {
+        return $this->logger;
     }
 
     /**
@@ -265,11 +279,19 @@ class Manager implements
     }
 
     /**
-     * @return Output|null
+     * @return Output
      */
-    public function getOutput(): ?Output
+    public function getOutput(): Output
     {
         return $this->output;
+    }
+
+    /**
+     * @return MonologErrorHandler
+     */
+    public function getExceptionRecord(): MonologErrorHandler
+    {
+        return $this->exceptionRecord;
     }
 
     /**
@@ -336,7 +358,7 @@ class Manager implements
     public function onStart($server): void
     {
         // 输出调试信息
-        $this->output->info("master start\t#{$server->master_pid}");
+        $this->logger->info("master start\t#{$server->master_pid}");
         // 设置进程名称
         swoole_set_process_name('php-ps: master');
         // 响应终端 ctrl+c
@@ -355,7 +377,7 @@ class Manager implements
     public function onShutdown($server): void
     {
         // 输出调试信息
-        $this->output->info("master shutdown\t#{$server->master_pid}");
+        $this->logger->info("master shutdown\t#{$server->master_pid}");
         // 事件触发
         $this->getEvent()->trigSwooleShutdown(func_get_args());
     }
@@ -367,7 +389,7 @@ class Manager implements
     public function onManagerStart($server): void
     {
         // 输出调试信息
-        $this->output->info("manager start\t#{$server->manager_pid}");
+        $this->logger->info("manager start\t#{$server->manager_pid}");
         // 设置进程名称
         swoole_set_process_name('php-ps: manager');
         // 事件触发
@@ -381,7 +403,7 @@ class Manager implements
     public function onManagerStop($server): void
     {
         // 输出调试信息
-        $this->output->info("manager stop\t#{$server->manager_pid}");
+        $this->logger->info("manager stop\t#{$server->manager_pid}");
         // 事件触发
         $this->getEvent()->trigSwooleManagerStop(func_get_args());
     }
@@ -395,7 +417,7 @@ class Manager implements
     {
         $type = $server->taskworker ? 'task' : 'worker';
         // 输出调试信息
-        $this->output->info("{$type} start\t#{$workerId}({$server->worker_pid})");
+        $this->logger->info("{$type} start\t#{$workerId}({$server->worker_pid})");
         // 设置进程名称
         swoole_set_process_name("php-ps: {$type}#{$workerId}");
         // 事件触发
@@ -410,7 +432,7 @@ class Manager implements
     public function onWorkerStop($server, int $workerId): void
     {
         $type = $server->taskworker ? 'task' : 'worker';
-        $this->output->info("{$type} stop\t#{$workerId}({$server->worker_pid})");
+        $this->logger->info("{$type} stop\t#{$workerId}({$server->worker_pid})");
         // 事件触发
         $this->getEvent()->trigSwooleWorkerStop(func_get_args());
     }
@@ -423,7 +445,7 @@ class Manager implements
     public function onWorkerExit($server, int $workerId): void
     {
         $type = $server->taskworker ? 'task' : 'worker';
-        $this->output->info("{$type} exit\t#{$workerId}({$server->worker_pid})");
+        $this->logger->info("{$type} exit\t#{$workerId}({$server->worker_pid})");
         // 事件触发
         $this->getEvent()->trigSwooleWorkerExit(func_get_args());
         // 清理全部定时器
@@ -440,7 +462,7 @@ class Manager implements
      */
     public function onWorkerError($server, int $workerId, int $workerPid, int $exitCode, int $signal): void
     {
-        $this->output->error("WorkerError: $workerId, pid: $workerPid, execCode: $exitCode, signal: $signal");
+        $this->logger->error("WorkerError: $workerId, pid: $workerPid, execCode: $exitCode, signal: $signal");
         // 事件触发
         $this->getEvent()->trigSwooleWorkerError(func_get_args());
     }
@@ -511,15 +533,5 @@ class Manager implements
     {
         // 未触发事件
         $this->getEvent()->trigSwooleFinish(func_get_args());
-    }
-
-    /**
-     * Log server error.
-     *
-     * @param Throwable|Exception $e
-     */
-    public static function logServerError(Throwable $e)
-    {
-        echo $e->__toString();
     }
 }

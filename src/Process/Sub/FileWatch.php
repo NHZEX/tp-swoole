@@ -44,8 +44,7 @@ class FileWatch extends BaseSubProcess
 
         $ignoreFiles = array_flip(get_included_files());
 
-        $output = $this->manager->getOutput();
-        $output->info("FileMonitor Process: {$this->process->pid}, Scanning...");
+        $this->logger->info("FileMonitor Process: {$this->process->pid}, Scanning...");
 
         while (true) {
             Coroutine::sleep($this->interval);
@@ -62,10 +61,10 @@ class FileWatch extends BaseSubProcess
                     } else {
                         $lastMtime = $file->getMTime();
                         if (isset($ignoreFiles[(string) $file])) {
-                            $output->writeln("[update] $file <warning>ignore</warning>");
+                            $this->logger->info("[update] $file <warning>ignore</warning>");
                             continue;
                         } else {
-                            $output->writeln("[update] $file <comment>reload</comment>");
+                            $this->logger->info("[update] $file <comment>reload</comment>");
                             $this->manager->getSwoole()->reload();
                             break;
                         }
