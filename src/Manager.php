@@ -6,7 +6,7 @@ use Closure;
 use Exception;
 use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use HZEX\TpSwoole\Log\MonologErrorHandler;
-use HZEX\TpSwoole\Process\Sub\FileWatch;
+use HZEX\TpSwoole\Process\FileWatch;
 use HZEX\TpSwoole\Task\SocketLogTask;
 use HZEX\TpSwoole\Task\TaskInterface;
 use HZEX\TpSwoole\Worker\ConnectionPool;
@@ -33,6 +33,7 @@ use unzxin\zswCore\Contract\Events\SwooleServerTaskInterface;
 use unzxin\zswCore\Contract\Events\SwooleWorkerInterface;
 use unzxin\zswCore\Contract\EventSubscribeInterface;
 use unzxin\zswCore\Event;
+use unzxin\zswCore\ProcessPool;
 
 class Manager implements
     SwooleServerInterface,
@@ -133,7 +134,7 @@ class Manager implements
         // 设置运行时内存限制
         ini_set('memory_limit', $this->config['memory_limit'] ?: '512M');
 
-        $this->processPool = new ProcessPool($this);
+        $this->processPool = ProcessPool::makeServer($this->swoole);
     }
 
     /**
@@ -227,19 +228,18 @@ class Manager implements
      */
     protected function initProcess()
     {
-        $this->processPool->setDebug($this->app->isDebug());
         $this->processPool->setLogger($this->logger);
-
         if ($this->config['hot_reload']['enable'] ?? false) {
             /** @var FileWatch $fw */
             $fw = $this->app->make(FileWatch::class);
             $fw->setConfig($this->config['hot_reload']);
+            $fw->setManager($this);
             $this->processPool->add($fw);
         }
         foreach ($this->config['process'] ?? [] as $process) {
             $this->processPool->add($this->app->make($process));
         }
-        $this->processPool->mount($this->swoole);
+        $this->processPool->start();
 
     }
 

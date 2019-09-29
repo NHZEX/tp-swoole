@@ -300,29 +300,25 @@
         },
         {
             "name": "nhzex/zsw-core",
-            "version": "v1.1.0",
+            "version": "v1.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/NHZEX/zsw-core.git",
-                "reference": "982328253a511a6d3755a00113ab47a39b3c7621"
+                "reference": "bbd6b86dce8663f168080837e479940fcdb86b04"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/NHZEX/zsw-core/zipball/982328253a511a6d3755a00113ab47a39b3c7621",
-                "reference": "982328253a511a6d3755a00113ab47a39b3c7621",
-                "shasum": "",
-                "mirrors": [
-                    {
-                        "url": "https://mirrors.aliyun.com/composer/dists/%package%/%reference%.%type%",
-                        "preferred": true
-                    }
-                ]
+                "url": "https://api.github.com/repos/NHZEX/zsw-core/zipball/bbd6b86dce8663f168080837e479940fcdb86b04",
+                "reference": "bbd6b86dce8663f168080837e479940fcdb86b04",
+                "shasum": ""
             },
             "require": {
                 "ext-sockets": "*",
-                "ext-swoole": "~4.4",
+                "ext-swoole": "^4.4.6",
+                "nhzex/n-helper": "^1.1",
                 "php": "~7.1",
-                "psr/container": "^1.0"
+                "psr/container": "^1.0",
+                "psr/log": "^1.1"
             },
             "require-dev": {
                 "mockery/mockery": "^1.2",
@@ -336,7 +332,7 @@
                 },
                 "files": []
             },
-            "notification-url": "https://packagist.org/downloads/",
+            "notification-url": "https://repo.packagist.org/downloads/",
             "license": [
                 "Apache-2.0"
             ],
@@ -347,7 +343,7 @@
                 }
             ],
             "description": "zx swoole core",
-            "time": "2019-09-26T05:51:34+00:00"
+            "time": "2019-09-29T07:35:51+00:00"
         },
         {
             "name": "open-smf/connection-pool",
@@ -2704,16 +2700,16 @@
         },
         {
             "name": "swoft/swoole-ide-helper",
-            "version": "v4.4.6",
+            "version": "v4.4.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/swoft-cloud/swoole-ide-helper.git",
-                "reference": "febf5e2845a060e1c42969cdd892f8353797d37b"
+                "reference": "0e4b21fd8d47c4047a421fcea809850a8da707b5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/swoft-cloud/swoole-ide-helper/zipball/febf5e2845a060e1c42969cdd892f8353797d37b",
-                "reference": "febf5e2845a060e1c42969cdd892f8353797d37b",
+                "url": "https://api.github.com/repos/swoft-cloud/swoole-ide-helper/zipball/0e4b21fd8d47c4047a421fcea809850a8da707b5",
+                "reference": "0e4b21fd8d47c4047a421fcea809850a8da707b5",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -2734,7 +2730,7 @@
                 "swoft",
                 "swoole"
             ],
-            "time": "2019-09-21T16:15:33+00:00"
+            "time": "2019-09-26T09:15:01+00:00"
         },
         {
             "name": "symfony/polyfill-ctype",

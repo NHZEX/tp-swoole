@@ -1,15 +1,21 @@
 <?php
 declare(strict_types=1);
 
-namespace HZEX\TpSwoole\Process\Sub;
+namespace HZEX\TpSwoole\Process;
 
-use HZEX\TpSwoole\Process\BaseSubProcess;
+use HZEX\TpSwoole\Manager;
 use SplFileInfo;
 use Swoole\Coroutine;
 use Symfony\Component\Finder\Finder;
+use unzxin\zswCore\Process\BaseSubProcess;
 
 class FileWatch extends BaseSubProcess
 {
+    /**
+     * @var Manager
+     */
+    private $manager;
+
     private $config = [];
     /**
      * @var int
@@ -27,6 +33,14 @@ class FileWatch extends BaseSubProcess
     public function setConfig(array $config)
     {
         $this->config = $config;
+    }
+
+    /**
+     * @param Manager $manager
+     */
+    public function setManager(Manager $manager): void
+    {
+        $this->manager = $manager;
     }
 
     /**

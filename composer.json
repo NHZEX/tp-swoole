@@ -21,7 +21,7 @@
         "ext-swoole": "~4.4",
         "monolog/monolog": "^2.0",
         "nhzex/n-helper": "^1.1",
-        "nhzex/zsw-core": "^1.1",
+        "nhzex/zsw-core": "^1.2",
         "open-smf/connection-pool": "~1.0",
         "psr/log": "^1.1",
         "symfony/finder": "^4.3",
