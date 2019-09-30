@@ -4,7 +4,6 @@ namespace HZEX\TpSwoole;
 
 use Closure;
 use Exception;
-use HZEX\TpSwoole\Concerns\InteractsWithConnection;
 use HZEX\TpSwoole\Concerns\InteractsWithHttp;
 use HZEX\TpSwoole\Concerns\InteractsWithServer;
 use HZEX\TpSwoole\Concerns\InteractsWithTask;
