@@ -30,7 +30,13 @@ class MonologErrorHandler extends ErrorHandler
         $logger = $refLogger->getValue();
         $logger->log(
             $level,
-            sprintf('Uncaught Exception %s: "%s" at %s line %s', Utils::getClass($e), $e->getMessage(), $e->getFile(), $e->getLine()),
+            sprintf(
+                'Uncaught Exception %s: "%s" at %s line %s',
+                Utils::getClass($e),
+                $e->getMessage(),
+                $e->getFile(),
+                $e->getLine()
+            ),
             ['exception' => $e]
         );
 
