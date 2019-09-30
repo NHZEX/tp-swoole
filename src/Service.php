@@ -13,7 +13,7 @@ use Psr\Container\ContainerInterface;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Server as Server;
 use Swoole\WebSocket\Server as WebsocketServer;
-use think\App;
+use think\Container;
 use unzxin\zswCore\Event as SwooleEvent;
 
 class Service extends \think\Service
@@ -28,32 +28,40 @@ class Service extends \think\Service
     protected static $server;
 
     /**
+     * @return HttpServer|Server|WebsocketServer
+     */
+    public static function getServer()
+    {
+        return self::$server;
+    }
+
+    /**
      * 服务注册
      */
     public function register()
     {
-        if (false === exist_swoole()) {
+        if (false === HZEX_SWOOLE_ENABLE) {
             return false;
         }
 
         $this->isWebsocket = $this->app->config->get('swoole.websocket.enabled', false);
 
-        // 绑定必须类
         $this->app->bind('swoole.server', function () {
             if (is_null(static::$server)) {
                 $this->createSwooleServer();
             }
             return static::$server;
         });
-        $this->app->bind(ContainerInterface::class, App::class);
+        $this->app->bind('swoole.event', SwooleEvent::class);
+        $this->app->bind(PidManager::class, function () {
+            return new PidManager($this->app->config->get('swoole.server.options.pid_file'));
+        });
+        $this->app->bind(ContainerInterface::class, Container::class);
         $this->app->bind('manager', Manager::class);
         $this->app->bind('request', Request::class);
+        Facade\SwooleEvent::instance()->setResolver(new EventResolver());
 
         $this->initLogger();
-
-        /** @var SwooleEvent $event */
-        $event = $this->app->make(SwooleEvent::class);
-        $event->setResolver(new EventResolver());
 
         // 替换默认db实现，以更好的兼任协程
         $this->app->bind('db', Db::class);
@@ -65,15 +73,11 @@ class Service extends \think\Service
      */
     public function boot()
     {
-        $this->commands(ServerCommand::class);
-    }
+        if (false === HZEX_SWOOLE_ENABLE) {
+            return;
+        }
 
-    /**
-     * @return HttpServer|Server|WebsocketServer
-     */
-    public static function getServer()
-    {
-        return self::$server;
+        $this->commands(ServerCommand::class);
     }
 
     /**

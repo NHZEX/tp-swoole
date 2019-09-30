@@ -4,7 +4,9 @@ namespace HZEX\TpSwoole;
 
 use Closure;
 use Exception;
+use HZEX\TpSwoole\Concerns\InteractsWithServer;
 use HZEX\TpSwoole\Facade\Server as ServerFacade;
+use HZEX\TpSwoole\Log\MonologConsoleHandler;
 use HZEX\TpSwoole\Log\MonologErrorHandler;
 use HZEX\TpSwoole\Process\FileWatch;
 use HZEX\TpSwoole\Task\SocketLogTask;
@@ -42,6 +44,8 @@ class Manager implements
     SwooleServerTaskInterface,
     SwoolePipeMessageInterface
 {
+    use InteractsWithServer;
+
     /**
      * @var string
      */
@@ -56,6 +60,9 @@ class Manager implements
      * @var App $app
      */
     private $app;
+
+    /** @var PidManager */
+    protected $pidManager;
 
     /**
      * @var Server|HttpServer|WsServer $swoole
@@ -118,11 +125,13 @@ class Manager implements
 
     /**
      * Manager constructor.
-     * @param App $app
+     * @param App        $app
+     * @param PidManager $pidManager
      */
-    public function __construct(App $app)
+    public function __construct(App $app, PidManager $pidManager)
     {
         $this->app = $app;
+        $this->pidManager = $pidManager;
 
         $this->instanceId = crc32(spl_object_hash($this));
         $this->swoole = ServerFacade::instance();
@@ -341,6 +350,7 @@ class Manager implements
      */
     public function start()
     {
+        MonologConsoleHandler::setDaemon($this->config['server']['options']['daemonize'] ?? false);
         Runtime::enableCoroutine($this->config['enable_coroutine'] ?? false);
         ServerFacade::instance()->start();
     }
@@ -359,6 +369,7 @@ class Manager implements
      */
     public function onStart($server): void
     {
+        $this->pidManager->create($server->master_pid, $server->manager_pid ?? 0);
         // 输出调试信息
         $this->logger->info("master start\t#{$server->master_pid}");
         // 设置进程名称
