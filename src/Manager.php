@@ -257,7 +257,9 @@ class Manager implements
     public function setLogger(LoggerInterface $logger)
     {
         $this->logger = $logger;
+
         $this->exceptionRecord = new MonologErrorHandler($logger);
+        $this->exceptionRecord->registerExceptionHandler();
     }
 
     /**
