@@ -36,12 +36,22 @@ class Sandbox
     protected $resetters = [];
     protected $services  = [];
 
+    /**
+     * 实例化沙箱
+     * Sandbox constructor.
+     * @param Container $app
+     */
     public function __construct(Container $app)
     {
         $this->setBaseApp($app);
         $this->initialize();
     }
 
+    /**
+     * 设置基本容器
+     * @param Container $app
+     * @return $this
+     */
     public function setBaseApp(Container $app)
     {
         $this->app = $app;
@@ -49,11 +59,18 @@ class Sandbox
         return $this;
     }
 
+    /**
+     * @return App 获取基本容器
+     */
     public function getBaseApp()
     {
         return $this->app;
     }
 
+    /**
+     * 初始化沙盒
+     * @return $this
+     */
     protected function initialize()
     {
         Container::setInstance(function () {
@@ -71,12 +88,24 @@ class Sandbox
         return $this;
     }
 
-    public function init()
+    /**
+     * 初始化容器
+     * @param null $fd
+     */
+    public function init($fd = null)
     {
+        if (null !== $fd) {
+            $cxt = Coroutine::getContext();
+            $cxt['__fd'] = $fd;
+        }
         $this->setInstance($app = $this->getApplication());
         $this->resetApp($app);
     }
 
+    /**
+     * 获取容器
+     * @return App|null
+     */
     public function getApplication()
     {
         $snapshot = $this->getSnapshot();
@@ -90,6 +119,10 @@ class Sandbox
         return $snapshot;
     }
 
+    /**
+     * 获取快照ID
+     * @return string
+     */
     protected function getSnapshotId()
     {
         $id = Coroutine::getCid();
@@ -103,6 +136,7 @@ class Sandbox
     }
 
     /**
+     * 获取容器快照
      * Get current snapshot.
      * @return App|null
      */
@@ -118,6 +152,10 @@ class Sandbox
         return $this;
     }
 
+    /**
+     * 清理沙箱
+     * @param bool $snapshot
+     */
     public function clear($snapshot = true)
     {
         if ($snapshot) {
@@ -129,6 +167,10 @@ class Sandbox
         gc_collect_cycles();
     }
 
+    /**
+     * 设置当前容器实例
+     * @param Container $app
+     */
     public function setInstance(Container $app)
     {
         $app->instance('app', $app);
@@ -136,6 +178,7 @@ class Sandbox
     }
 
     /**
+     * 拷贝 Config 副本
      * Set initial config.
      */
     protected function setInitialConfig()
@@ -143,12 +186,16 @@ class Sandbox
         $this->config = clone $this->getBaseApp()->config;
     }
 
+    /**
+     * 拷贝 Event 副本
+     */
     protected function setInitialEvent()
     {
         $this->event = clone $this->getBaseApp()->event;
     }
 
     /**
+     * 获取 Config
      * Get config snapshot.
      */
     public function getConfig()
@@ -156,16 +203,27 @@ class Sandbox
         return $this->config;
     }
 
+    /**
+     * 获取 Event
+     * @return Event
+     */
     public function getEvent()
     {
         return $this->event;
     }
 
+    /**
+     * 获取服务重设器
+     * @return array
+     */
     public function getServices()
     {
         return $this->services;
     }
 
+    /**
+     * 初始化服务重设器
+     */
     protected function setInitialServices()
     {
         $app = $this->getBaseApp();
@@ -185,6 +243,7 @@ class Sandbox
     }
 
     /**
+     * 设置通用重设器
      * Initialize resetters.
      */
     protected function setInitialResetters()
