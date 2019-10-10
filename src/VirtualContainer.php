@@ -12,6 +12,10 @@ use Exception;
 use HZEX\TpSwoole\Container\Destroy\DestroyContract;
 use HZEX\TpSwoole\Container\Destroy\DestroyDbConnection;
 use HZEX\TpSwoole\Coroutine\CoDestroy;
+use HZEX\TpSwoole\Resetters\ResetApp;
+use HZEX\TpSwoole\Resetters\ResetEvent;
+use HZEX\TpSwoole\Resetters\ResetMiddleware;
+use HZEX\TpSwoole\Resetters\ResetterContract;
 use HZEX\TpSwoole\Tp\Orm\Db;
 use HZEX\TpSwoole\Worker\ConnectionPool;
 use HZEX\TpSwoole\Worker\Http;
@@ -29,6 +33,7 @@ use think\Event;
 use think\Lang;
 use Traversable;
 use unzxin\zswCore\Event as SwooleEvent;
+use function HuangZx\ref_get_prop;
 
 /**
  * Class VirtualContainer
@@ -71,6 +76,11 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
     ];
 
     /**
+     * @var ResetterContract[]
+     */
+    protected $resetters = [];
+
+    /**
      * 加载虚拟容器配置
      */
     public static function loadConfiguration()
@@ -98,6 +108,7 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         $this->instance(App::class, $this);
         $this->instance(Container::class, $this);
         $this->instance(VirtualContainer::class, $this);
+        $this->setInitialResetters();
 
         parent::setInstance(Closure::fromCallable([self::class, 'getInstance']));
 
@@ -133,25 +144,47 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
     {
         $newContainer = clone $this;
 
-        $refNewContainer = new ReflectionObject($newContainer);
-        $instances = $refNewContainer->getProperty('instances');
-        $instances->setAccessible(true);
-        /** @var array $instancesVlaue */
-        $instancesVlaue = $instances->getValue($newContainer);
-        foreach ($instancesVlaue as $class => $object) {
+        $instancesRef = ref_get_prop($newContainer, 'instances');
+        /** @var array $instances */
+        $instances = $instancesRef->getValue();
+        foreach ($instances as $class => $object) {
             if (in_array($class, self::$penetrates)) {
-                $instancesVlaue[$class] = $object;
+                $instances[$class] = $object;
             } else {
-                $instancesVlaue[$class] = clone $object;
+                $instances[$class] = clone $object;
             }
         }
-        $instances->setValue($newContainer, $instancesVlaue);
+        $instancesRef->setValue($instances);
 
         $newContainer->instance(App::class, $newContainer);
         $newContainer->instance(Container::class, $newContainer);
         $newContainer->instance(VirtualContainer::class, $newContainer);
-
+        $this->resetters($newContainer);
         return $newContainer;
+    }
+
+    protected function setInitialResetters()
+    {
+        $resetters = [
+            ResetApp::class,
+            ResetEvent::class,
+            ResetMiddleware::class,
+        ];
+
+        foreach ($resetters as $resetter) {
+            $resetterClass = $this->make($resetter);
+            if (!$resetterClass instanceof ResetterContract) {
+                throw new RuntimeException("{$resetter} must implement " . ResetterContract::class);
+            }
+            $this->resetters[$resetter] = $resetterClass;
+        }
+    }
+
+    protected function resetters(App $container)
+    {
+        foreach ($this->resetters as $resetter) {
+            $resetter->handle($container);
+        }
     }
 
     /**
