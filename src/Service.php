@@ -14,6 +14,7 @@ use Swoole\Http\Server as HttpServer;
 use Swoole\Server as Server;
 use Swoole\WebSocket\Server as WebsocketServer;
 use think\Container;
+use think\Http;
 use unzxin\zswCore\Event as SwooleEvent;
 
 class Service extends \think\Service
@@ -59,6 +60,7 @@ class Service extends \think\Service
         $this->app->bind(ContainerInterface::class, Container::class);
         $this->app->bind('manager', Manager::class);
         $this->app->bind('request', Request::class);
+        $this->app->bind(Http::class, Tp\Http::class);
         Facade\SwooleEvent::instance()->setResolver(new EventResolver());
 
         $this->initLogger();

@@ -14,7 +14,6 @@ use HZEX\TpSwoole\Container\Destroy\DestroyDbConnection;
 use HZEX\TpSwoole\Coroutine\CoDestroy;
 use HZEX\TpSwoole\Resetters\ResetApp;
 use HZEX\TpSwoole\Resetters\ResetEvent;
-use HZEX\TpSwoole\Resetters\ResetMiddleware;
 use HZEX\TpSwoole\Resetters\ResetterContract;
 use HZEX\TpSwoole\Tp\Orm\Db;
 use HZEX\TpSwoole\Worker\ConnectionPool;
@@ -168,7 +167,6 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         $resetters = [
             ResetApp::class,
             ResetEvent::class,
-            ResetMiddleware::class,
         ];
 
         foreach ($resetters as $resetter) {

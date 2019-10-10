@@ -7,6 +7,7 @@ use Closure;
 use Exception;
 use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\Resetters\ResetHttp;
+use HZEX\TpSwoole\Resetters\ResetMiddleware;
 use HZEX\TpSwoole\Resetters\ResetModel;
 use HZEX\TpSwoole\Resetters\ResetRouter;
 use HZEX\TpSwoole\Resetters\ResetterContract;
@@ -135,6 +136,7 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
             ResetModel::class,
             ResetHttp::class,
             ResetRouter::class,
+            ResetMiddleware::class,
             ResetValidate::class,
         ];
 
