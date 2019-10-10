@@ -2,25 +2,28 @@
 
 namespace HZEX\TpSwoole\Resetters;
 
+use HZEX\TpSwoole\Tp\Request;
 use think\App;
-use think\Event;
+use think\Route;
 
 /**
  * Class RebindRouterContainer
  * @package think\swoole\resetters
  */
-class RebindEventContainer implements ResetterContract
+class ResetRouter implements ResetterContract
 {
     public function handle(App $app): void
     {
-        $route = $app->make(Event::class);
+        $route = $app->make(Route::class);
 
         $closure = function () use ($app) {
             /** @noinspection PhpUndefinedFieldInspection */
             $this->app = $app;
+            /** @noinspection PhpUndefinedFieldInspection */
+            $this->request = $app->make(Request::class);
         };
 
-        $resetEvent = $closure->bindTo($route, $route);
-        $resetEvent();
+        $resetRouter = $closure->bindTo($route, $route);
+        $resetRouter();
     }
 }

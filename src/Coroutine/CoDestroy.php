@@ -59,5 +59,10 @@ class CoDestroy
                 $destroy->handle($this->app);
             }
         }
+        // 调试模式下尽快执行垃圾回收
+        if ($this->app->isDebug()) {
+            // 强制执行垃圾回收
+            gc_collect_cycles();
+        }
     }
 }

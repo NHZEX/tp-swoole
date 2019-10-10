@@ -6,14 +6,14 @@ namespace HZEX\TpSwoole\Worker;
 use Closure;
 use Exception;
 use HZEX\TpSwoole\Manager;
-use HZEX\TpSwoole\Resetters\RebindEventContainer;
-use HZEX\TpSwoole\Resetters\RebindHttpContainer;
-use HZEX\TpSwoole\Resetters\RebindRouterContainer;
-use HZEX\TpSwoole\Resetters\RebindValidate;
 use HZEX\TpSwoole\Resetters\ResetApp;
+use HZEX\TpSwoole\Resetters\ResetEvent;
+use HZEX\TpSwoole\Resetters\ResetHttp;
 use HZEX\TpSwoole\Resetters\ResetMiddleware;
 use HZEX\TpSwoole\Resetters\ResetModel;
+use HZEX\TpSwoole\Resetters\ResetRouter;
 use HZEX\TpSwoole\Resetters\ResetterContract;
+use HZEX\TpSwoole\Resetters\ResetValidate;
 use RuntimeException;
 use Swoole\Coroutine;
 use Swoole\Http\Request;
@@ -137,13 +137,10 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
             ResetApp::class,
             ResetMiddleware::class,
             ResetModel::class,
-            RebindHttpContainer::class,
-            RebindRouterContainer::class,
-            RebindEventContainer::class,
-            RebindValidate::class,
-            // BindRequest::class,
-            // ResetConfig::class,
-            // ResetEvent::class,
+            ResetHttp::class,
+            ResetRouter::class,
+            ResetEvent::class,
+            ResetValidate::class,
         ];
 
         $resetters = array_merge($resetters, $this->getApp()->config->get('swoole.resetters', []));

@@ -6,7 +6,7 @@ namespace HZEX\TpSwoole\Resetters;
 use think\App;
 use think\Validate;
 
-class RebindValidate implements ResetterContract
+class ResetValidate implements ResetterContract
 {
     public function handle(App $app): void
     {

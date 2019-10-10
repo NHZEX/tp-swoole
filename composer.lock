@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "876326eeb57006aa89a511d408a4db0a",
+    "content-hash": "bd8d3156890b9d06bba30b5bce4ebe42",
     "packages": [
         {
             "name": "league/flysystem",
@@ -300,16 +300,16 @@
         },
         {
             "name": "nhzex/zsw-core",
-            "version": "v1.2.0",
+            "version": "v1.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/NHZEX/zsw-core.git",
-                "reference": "bbd6b86dce8663f168080837e479940fcdb86b04"
+                "reference": "8b89752eea2b09593a96ee6fdeaaae318a189248"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/NHZEX/zsw-core/zipball/bbd6b86dce8663f168080837e479940fcdb86b04",
-                "reference": "bbd6b86dce8663f168080837e479940fcdb86b04",
+                "url": "https://api.github.com/repos/NHZEX/zsw-core/zipball/8b89752eea2b09593a96ee6fdeaaae318a189248",
+                "reference": "8b89752eea2b09593a96ee6fdeaaae318a189248",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -338,7 +338,7 @@
                 },
                 "files": []
             },
-            "notification-url": "https://repo.packagist.org/downloads/",
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "Apache-2.0"
             ],
@@ -349,7 +349,7 @@
                 }
             ],
             "description": "zx swoole core",
-            "time": "2019-09-29T07:35:51+00:00"
+            "time": "2019-10-09T08:42:09+00:00"
         },
         {
             "name": "open-smf/connection-pool",
@@ -1020,12 +1020,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/top-think/framework.git",
-                "reference": "ff076184a2bd4fee785c71dc0993e0051f2890d5"
+                "reference": "768f12f01daa0bd96ef4ad8771d80fb6fec137c8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/top-think/framework/zipball/ff076184a2bd4fee785c71dc0993e0051f2890d5",
-                "reference": "ff076184a2bd4fee785c71dc0993e0051f2890d5",
+                "url": "https://api.github.com/repos/top-think/framework/zipball/768f12f01daa0bd96ef4ad8771d80fb6fec137c8",
+                "reference": "768f12f01daa0bd96ef4ad8771d80fb6fec137c8",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -1080,7 +1080,7 @@
                 "orm",
                 "thinkphp"
             ],
-            "time": "2019-10-07T05:56:34+00:00"
+            "time": "2019-10-09T07:30:48+00:00"
         },
         {
             "name": "topthink/think-helper",

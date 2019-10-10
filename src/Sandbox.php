@@ -3,10 +3,6 @@
 namespace HZEX\TpSwoole;
 
 use HZEX\TpSwoole\Contract\ResetterInterface;
-use HZEX\TpSwoole\Resetters\ClearInstances;
-use HZEX\TpSwoole\Resetters\ResetConfig;
-use HZEX\TpSwoole\Resetters\ResetEvent;
-use HZEX\TpSwoole\Resetters\ResetService;
 use RuntimeException;
 use Swoole\Coroutine;
 use think\App;
@@ -163,8 +159,12 @@ class Sandbox
         }
 
         $this->setInstance($this->getBaseApp());
-        // TODO 调试模式下下执行，强制执行垃圾回收
-        gc_collect_cycles();
+
+        // TODO 未确定是否可以不进行垃圾回收
+        if ($this->getBaseApp()->isDebug()) {
+            // 强制执行垃圾回收
+            gc_collect_cycles();
+        }
     }
 
     /**
@@ -251,10 +251,10 @@ class Sandbox
         $app = $this->getBaseApp();
 
         $resetters = [
-            ClearInstances::class,
-            ResetConfig::class,
-            ResetEvent::class,
-            ResetService::class,
+//            ClearInstances::class,
+//            ResetConfig::class,
+//            ResetEvent::class,
+//            ResetService::class,
         ];
 
         $resetters = array_merge($resetters, $this->config->get('swoole.resetters', []));
@@ -273,7 +273,7 @@ class Sandbox
      *
      * @param Container $app
      */
-    public function resetApp(Container $app)
+    protected function resetApp(Container $app)
     {
         foreach ($this->resetters as $resetter) {
             $resetter->handle($app, $this);

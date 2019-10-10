@@ -2,31 +2,26 @@
 
 namespace HZEX\TpSwoole\Resetters;
 
-use HZEX\TpSwoole\Contract\ResetterInterface;
-use HZEX\TpSwoole\Sandbox;
+use ReflectionException;
+use think\App;
 use think\Container;
+use think\Event;
+use function HuangZx\ref_get_prop;
 
 /**
  * Class ResetEvent
  * @package think\swoole\resetters
  * @property Container $app;
  */
-class ResetEvent implements ResetterInterface
+class ResetEvent implements ResetterContract
 {
-
-    public function handle(Container $app, Sandbox $sandbox)
+    /**
+     * @param App $app
+     * @throws ReflectionException
+     */
+    public function handle(App $app): void
     {
-        $event = clone $sandbox->getEvent();
-
-        $closure = function () use ($app) {
-            $this->app = $app;
-        };
-
-        $resetEvent = $closure->bindTo($event, $event);
-        $resetEvent();
-
-        $app->instance('event', $event);
-
-        return $app;
+        $event = $app->make(Event::class);
+        ref_get_prop($event, 'app')->setValue($app);
     }
 }

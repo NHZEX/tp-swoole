@@ -26,7 +26,7 @@
         "psr/log": "^1.1",
         "symfony/finder": "^4.3",
         "symfony/var-dumper": "^4.3",
-        "topthink/framework": "6.0.x-dev#ff076184a2bd4fee785c71dc0993e0051f2890d5",
+        "topthink/framework": "6.0.x-dev#768f12f01daa0bd96ef4ad8771d80fb6fec137c8",
         "topthink/think-helper": "^3.0",
         "topthink/think-orm": "2.0.x-dev#01f530a70a31b461557937ea75a7713862418b32"
     },
