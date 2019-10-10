@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace HZEX\TpSwoole;
 
 use HZEX\TpSwoole\Command\ServerCommand;
-use HZEX\TpSwoole\Tp\Orm\Db;
+use HZEX\TpSwoole\Tp\Pool\Db;
 use HZEX\TpSwoole\Tp\Request;
 use InvalidArgumentException;
 use Monolog\Handler\RotatingFileHandler;
@@ -61,12 +61,10 @@ class Service extends \think\Service
         $this->app->bind('manager', Manager::class);
         $this->app->bind('request', Request::class);
         $this->app->bind(Http::class, Tp\Http::class);
+        $this->app->bind('db', Db::class);
         Facade\SwooleEvent::instance()->setResolver(new EventResolver());
 
         $this->initLogger();
-
-        // 替换默认db实现，以更好的兼任协程
-        $this->app->bind('db', Db::class);
         return true;
     }
 

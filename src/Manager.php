@@ -163,6 +163,22 @@ class Manager implements
         $this->initSubscribe();
         // 初始外部进程集
         $this->initProcess();
+        // 预加载
+        $this->prepareConcretes();
+    }
+
+    /**
+     * 预加载
+     */
+    protected function prepareConcretes()
+    {
+        $defaultConcretes = ['db', 'cache',];
+
+        foreach ($defaultConcretes as $concrete) {
+            if ($this->app->exists($concrete)) {
+                $this->app->make($concrete);
+            }
+        }
     }
 
     /**

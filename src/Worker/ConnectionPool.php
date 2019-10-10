@@ -128,14 +128,14 @@ class ConnectionPool implements WorkerPluginContract, SwooleWorkerInterface, Eve
     public function requestCustomize(ConnectorInterface $connector, array $options, ?string &$name): SmfConnectionPool
     {
         // 生成唯一命名
-        $name = hash('sha1', serialize($options));
+        $name = hash('sha1', get_class($connector) . serialize($options));
         // 获取连接池
         if (false === $this->hasConnectionPool($name)) {
             // All Redis connections: [4 workers * 5 = 20, 4 workers * 20 = 80]
             $smfRedisPool = new SmfConnectionPool(
                 [
-                    'minActive' => 5,
-                    'maxActive' => 20,
+                    'minActive' => $options['poolMinActive'] ?? 5,
+                    'maxActive' => $options['poolMaxActive'] ?? 20,
                 ],
                 $connector,
                 $options

@@ -6,7 +6,6 @@ namespace HZEX\TpSwoole;
 use ArrayAccess;
 use ArrayIterator;
 use Closure;
-use Co;
 use Countable;
 use Exception;
 use HZEX\TpSwoole\Container\Destroy\DestroyContract;
@@ -15,7 +14,6 @@ use HZEX\TpSwoole\Coroutine\CoDestroy;
 use HZEX\TpSwoole\Resetters\ResetApp;
 use HZEX\TpSwoole\Resetters\ResetEvent;
 use HZEX\TpSwoole\Resetters\ResetterContract;
-use HZEX\TpSwoole\Tp\Orm\Db;
 use HZEX\TpSwoole\Worker\ConnectionPool;
 use HZEX\TpSwoole\Worker\Http;
 use IteratorAggregate;
@@ -23,10 +21,12 @@ use Psr\Container\ContainerInterface;
 use ReflectionException;
 use ReflectionObject;
 use RuntimeException;
+use Swoole\Coroutine;
 use think\App;
 use think\Config;
 use think\Console;
 use think\Container;
+use think\Db;
 use think\Env;
 use think\Event;
 use think\Lang;
@@ -147,7 +147,7 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         /** @var array $instances */
         $instances = $instancesRef->getValue();
         foreach ($instances as $class => $object) {
-            if (in_array($class, self::$penetrates)) {
+            if (in_array($class, self::$penetrates) || in_array(get_class($object), self::$penetrates)) {
                 $instances[$class] = $object;
             } else {
                 $instances[$class] = clone $object;
@@ -193,13 +193,13 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
      */
     public static function getInstance(): Container
     {
-        $cid = Co::getCid();
+        $cid = Coroutine::getCid();
 
         if (-1 === $cid) {
             return static::$vinstance;
         }
 
-        $context = Co::getContext();
+        $context = Coroutine::getContext();
 
         if (false === isset($context['__app'])) {
             $context['__app'] = $app = static::$vinstance->newCloneContainer();
@@ -218,7 +218,7 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
      */
     public static function setInstance($instance): void
     {
-        $cid = Co::getCid();
+        $cid = Coroutine::getCid();
 
         if (-1 === $cid && $instance instanceof VirtualContainer) {
             parent::setInstance($instance);
