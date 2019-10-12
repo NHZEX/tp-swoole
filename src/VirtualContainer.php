@@ -14,6 +14,7 @@ use HZEX\TpSwoole\Coroutine\CoDestroy;
 use HZEX\TpSwoole\Resetters\ResetApp;
 use HZEX\TpSwoole\Resetters\ResetEvent;
 use HZEX\TpSwoole\Resetters\ResetterContract;
+use HZEX\TpSwoole\Tp\Pool\Db;
 use HZEX\TpSwoole\Worker\ConnectionPool;
 use HZEX\TpSwoole\Worker\Http;
 use IteratorAggregate;
@@ -69,7 +70,7 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         Manager::class,
         ConnectionPool::class,
         'swoole.server',
-        Tp\Pool\Db::class,
+        Db::class,
     ];
 
     /**
