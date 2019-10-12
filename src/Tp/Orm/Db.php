@@ -5,7 +5,7 @@ namespace HZEX\TpSwoole\Tp\Orm;
 
 use InvalidArgumentException;
 use Swoole\Coroutine;
-use think\db\Connection;
+use think\db\ConnectionInterface;
 
 class Db extends \think\Db
 {
@@ -14,9 +14,9 @@ class Db extends \think\Db
      * @access protected
      * @param string|null $name  连接标识
      * @param bool        $force 强制重新连接
-     * @return Connection
+     * @return ConnectionInterface
      */
-    protected function instance(string $name = null, bool $force = false): Connection
+    protected function instance(string $name = null, bool $force = false): ConnectionInterface
     {
         if (empty($name)) {
             $name = $this->getConfig('default', 'mysql');

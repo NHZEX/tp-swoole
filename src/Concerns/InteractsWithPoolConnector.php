@@ -2,6 +2,7 @@
 
 namespace HZEX\TpSwoole\Concerns;
 
+use Swoole\Coroutine;
 use Swoole\Coroutine\Channel;
 
 trait InteractsWithPoolConnector
@@ -23,6 +24,10 @@ trait InteractsWithPoolConnector
     {
         if (!$this->return) {
             return true;
+        }
+
+        if (-1 === Coroutine::getCid()) {
+            return false;
         }
 
         if ($this->pool->isFull()) {

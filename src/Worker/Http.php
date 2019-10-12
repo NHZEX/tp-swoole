@@ -58,6 +58,9 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
         $event = $manager->getEvents();
         $event[] = 'Request';
         $manager->withEvents($event);
+
+        // 预加载
+        $this->getApp()->make('db');
         return true;
     }
 
@@ -170,6 +173,14 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
     {
         $header = $req->header ?: [];
         $server = $req->server ?: [];
+
+        // 暂时性兼容request类型限制的解决方案
+        if (isset($server['server_port'])) {
+            $server['server_port'] = (string) $server['server_port'];
+        }
+        if (isset($server['remote_port'])) {
+            $server['remote_port'] = (string) $server['remote_port'];
+        }
 
         foreach ($header as $key => $value) {
             $server["http_" . str_replace('-', '_', $key)] = $value;

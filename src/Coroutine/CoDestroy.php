@@ -59,6 +59,17 @@ class CoDestroy
                 $destroy->handle($this->app);
             }
         }
+
+        $unset = function () {
+            /** @noinspection PhpUndefinedFieldInspection */
+            foreach ($this->instances as $key => $instance) {
+                /** @noinspection PhpUndefinedFieldInspection */
+                unset($this->instances[$key]);
+            }
+        };
+        $unsetApp = $unset->bindTo($this->app, $this->app);
+        $unsetApp();
+
         // 调试模式下尽快执行垃圾回收
         if ($this->app->isDebug()) {
             // 强制执行垃圾回收

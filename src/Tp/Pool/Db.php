@@ -41,11 +41,12 @@ class Db extends \think\Db
             $name = $this->getConfig('default', 'mysql');
         }
 
-        $key = "db.connection.{$name}";
-        $cxt = Coroutine::getContext();
-        if (!$cxt) {
+        if (-1 === Coroutine::getCid()) {
             parent::instance(...func_get_args());
         }
+
+        $key = "db.connection.{$name}";
+        $cxt = Coroutine::getContext();
         if (isset($cxt[$key])) {
             return $cxt[$key];
         }

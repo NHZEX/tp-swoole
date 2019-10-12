@@ -9,7 +9,7 @@ use Closure;
 use Countable;
 use Exception;
 use HZEX\TpSwoole\Container\Destroy\DestroyContract;
-use HZEX\TpSwoole\Container\Destroy\DestroyDbConnection;
+use HZEX\TpSwoole\Coroutine\CoConstruct;
 use HZEX\TpSwoole\Coroutine\CoDestroy;
 use HZEX\TpSwoole\Resetters\ResetApp;
 use HZEX\TpSwoole\Resetters\ResetEvent;
@@ -26,9 +26,7 @@ use think\App;
 use think\Config;
 use think\Console;
 use think\Container;
-use think\Db;
 use think\Env;
-use think\Event;
 use think\Lang;
 use Traversable;
 use unzxin\zswCore\Event as SwooleEvent;
@@ -65,13 +63,13 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         Config::class,
         Console::class,
         Env::class,
-        Event::class,
+        // Event::class,  // 泄漏了
         Lang::class,
         SwooleEvent::class,
         Manager::class,
         ConnectionPool::class,
         'swoole.server',
-        Db::class,
+        Tp\Pool\Db::class,
     ];
 
     /**
@@ -93,11 +91,27 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
     }
 
     /**
+     * @return VirtualContainer
+     */
+    public static function getVinstance(): VirtualContainer
+    {
+        return self::$vinstance;
+    }
+
+    /**
      * @param string $className
      */
     public static function addPenetrate(string $className)
     {
         self::$penetrates[] = $className;
+    }
+
+    /**
+     * @return array
+     */
+    public static function getPenetrates(): array
+    {
+        return self::$penetrates;
     }
 
     public function __construct(string $rootPath = '')
@@ -121,7 +135,6 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
     private function setInitialDestroys(array $destroys)
     {
         $defaultDestroys = [
-            DestroyDbConnection::class,
         ];
 
         $destroys = array_merge($defaultDestroys, $destroys);
@@ -202,6 +215,7 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
         $context = Coroutine::getContext();
 
         if (false === isset($context['__app'])) {
+            $context['__construct'] = new CoConstruct();
             $context['__app'] = $app = static::$vinstance->newCloneContainer();
             $context['__destroy'] = new CoDestroy($app, static::$vinstance->containerDestroy);
         }
