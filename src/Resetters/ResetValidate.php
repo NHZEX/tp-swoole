@@ -3,10 +3,11 @@ declare(strict_types=1);
 
 namespace HZEX\TpSwoole\Resetters;
 
+use HZEX\TpSwoole\Contract\ResetterInterface;
 use think\App;
 use think\Validate;
 
-class ResetValidate implements ResetterContract
+class ResetValidate implements ResetterInterface
 {
     public function handle(App $app): void
     {

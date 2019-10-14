@@ -3,11 +3,12 @@ declare(strict_types=1);
 
 namespace HZEX\TpSwoole\Resetters;
 
+use HZEX\TpSwoole\Contract\ResetterInterface;
 use ReflectionException;
 use ReflectionObject;
 use think\App;
 
-class ResetApp implements ResetterContract
+class ResetApp implements ResetterInterface
 {
 
     /**

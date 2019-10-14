@@ -2,16 +2,14 @@
 
 namespace HZEX\TpSwoole\Contract;
 
-use HZEX\TpSwoole\Sandbox;
-use think\Container;
+use think\App;
 
 interface ResetterInterface
 {
     /**
      * "handle" function for resetting app.
      *
-     * @param Container $app
-     * @param Sandbox   $sandbox
+     * @param App $container
      */
-    public function handle(Container $app, Sandbox $sandbox);
+    public function handle(App $container): void;
 }

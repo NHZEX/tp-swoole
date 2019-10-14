@@ -9,11 +9,11 @@ use Closure;
 use Countable;
 use Exception;
 use HZEX\TpSwoole\Container\Destroy\DestroyContract;
+use HZEX\TpSwoole\Contract\ResetterInterface;
 use HZEX\TpSwoole\Coroutine\CoConstruct;
 use HZEX\TpSwoole\Coroutine\CoDestroy;
 use HZEX\TpSwoole\Resetters\ResetApp;
 use HZEX\TpSwoole\Resetters\ResetEvent;
-use HZEX\TpSwoole\Resetters\ResetterContract;
 use HZEX\TpSwoole\Tp\Pool\Db;
 use HZEX\TpSwoole\Worker\ConnectionPool;
 use HZEX\TpSwoole\Worker\Http;
@@ -73,7 +73,7 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
     ];
 
     /**
-     * @var ResetterContract[]
+     * @var ResetterInterface[]
      */
     protected $resetters = [];
 
@@ -184,8 +184,8 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
 
         foreach ($resetters as $resetter) {
             $resetterClass = $this->make($resetter);
-            if (!$resetterClass instanceof ResetterContract) {
-                throw new RuntimeException("{$resetter} must implement " . ResetterContract::class);
+            if (!$resetterClass instanceof ResetterInterface) {
+                throw new RuntimeException("{$resetter} must implement " . ResetterInterface::class);
             }
             $this->resetters[$resetter] = $resetterClass;
         }

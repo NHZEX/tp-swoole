@@ -3,19 +3,16 @@
 namespace HZEX\TpSwoole\Resetters;
 
 use HZEX\TpSwoole\Contract\ResetterInterface;
-use HZEX\TpSwoole\Sandbox;
-use think\Container;
+use think\App;
 
 class ClearInstances implements ResetterInterface
 {
-    public function handle(Container $app, Sandbox $sandbox)
+    public function handle(App $container): void
     {
-        $instances = $sandbox->getConfig()->get('swoole.instances', []);
+        $instances = $container->config->get('swoole.instances', []);
 
         foreach ($instances as $instance) {
-            $app->delete($instance);
+            $container->delete($instance);
         }
-
-        return $app;
     }
 }

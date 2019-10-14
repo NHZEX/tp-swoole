@@ -5,9 +5,9 @@ namespace HZEX\TpSwoole\Worker;
 
 use Closure;
 use Exception;
+use HZEX\TpSwoole\Contract\ResetterInterface;
 use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\Resetters\ResetHttp;
-use HZEX\TpSwoole\Resetters\ResetterContract;
 use HZEX\TpSwoole\Resetters\ResetValidate;
 use RuntimeException;
 use Swoole\Coroutine;
@@ -27,7 +27,7 @@ use unzxin\zswCore\Event;
 class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeInterface
 {
     /**
-     * @var ResetterContract[]
+     * @var ResetterInterface[]
      */
     protected $resetters = [];
 
@@ -140,8 +140,8 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
 
         foreach ($resetters as $resetter) {
             $resetterClass = $this->getApp()->make($resetter);
-            if (!$resetterClass instanceof ResetterContract) {
-                throw new RuntimeException("{$resetter} must implement " . ResetterContract::class);
+            if (!$resetterClass instanceof ResetterInterface) {
+                throw new RuntimeException("{$resetter} must implement " . ResetterInterface::class);
             }
             $this->resetters[$resetter] = $resetterClass;
         }

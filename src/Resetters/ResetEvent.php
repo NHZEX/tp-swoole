@@ -2,6 +2,7 @@
 
 namespace HZEX\TpSwoole\Resetters;
 
+use HZEX\TpSwoole\Contract\ResetterInterface;
 use ReflectionException;
 use think\App;
 use think\Container;
@@ -13,7 +14,7 @@ use function HuangZx\ref_get_prop;
  * @package think\swoole\resetters
  * @property Container $app;
  */
-class ResetEvent implements ResetterContract
+class ResetEvent implements ResetterInterface
 {
     /**
      * @param App $app
