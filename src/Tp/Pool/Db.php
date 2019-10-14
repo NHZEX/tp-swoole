@@ -41,7 +41,7 @@ class Db extends \think\Db
             $name = $this->getConfig('default', 'mysql');
         }
 
-        if (-1 === Coroutine::getCid()) {
+        if (!exist_swoole() || -1 === Coroutine::getCid()) {
             parent::instance(...func_get_args());
         }
 

@@ -83,4 +83,17 @@ return [
             'max_files' => 7,
         ],
     ],
+    //连接池
+    'pool'       => [
+        'db'    => [
+            'enable'        => true,
+            'max_active'    => 3,
+            'max_wait_time' => 5,
+        ],
+        'cache' => [
+            'enable'        => true,
+            'max_active'    => 3,
+            'max_wait_time' => 5,
+        ],
+    ],
 ];

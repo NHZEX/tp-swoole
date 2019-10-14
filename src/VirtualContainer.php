@@ -9,7 +9,6 @@ use Closure;
 use Countable;
 use Exception;
 use HZEX\TpSwoole\Container\Destroy\DestroyContract;
-use HZEX\TpSwoole\Container\Destroy\DestroyLog;
 use HZEX\TpSwoole\Coroutine\CoConstruct;
 use HZEX\TpSwoole\Coroutine\CoDestroy;
 use HZEX\TpSwoole\Resetters\ResetApp;
@@ -136,7 +135,6 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
     private function setInitialDestroys(array $destroys)
     {
         $defaultDestroys = [
-            DestroyLog::class,
         ];
 
         $destroys = array_merge($defaultDestroys, $destroys);

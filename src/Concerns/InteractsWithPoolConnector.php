@@ -26,7 +26,7 @@ trait InteractsWithPoolConnector
             return true;
         }
 
-        if (-1 === Coroutine::getCid()) {
+        if (!exist_swoole() || -1 === Coroutine::getCid()) {
             return false;
         }
 
