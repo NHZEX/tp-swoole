@@ -8,8 +8,6 @@ use Exception;
 use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\Resetters\ResetHttp;
 use HZEX\TpSwoole\Resetters\ResetMiddleware;
-use HZEX\TpSwoole\Resetters\ResetModel;
-use HZEX\TpSwoole\Resetters\ResetRouter;
 use HZEX\TpSwoole\Resetters\ResetterContract;
 use HZEX\TpSwoole\Resetters\ResetValidate;
 use RuntimeException;
@@ -136,9 +134,9 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
         $resetters = [
             // ClearInstances::class,
             // ResetApp::class,
-            ResetModel::class,
+            // ResetModel::class,
             ResetHttp::class,
-            ResetRouter::class,
+            // ResetRouter::class,
             ResetMiddleware::class,
             ResetValidate::class,
         ];

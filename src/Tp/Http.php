@@ -3,12 +3,36 @@ declare(strict_types=1);
 
 namespace HZEX\TpSwoole\Tp;
 
+use think\Middleware;
 use think\Route;
 
 class Http extends \think\Http
 {
+    /** @var Middleware */
+    protected static $middleware;
+
     /** @var Route */
     protected static $route;
+
+    protected function loadMiddleware(): void
+    {
+        if (!isset(self::$middleware)) {
+            parent::loadMiddleware();
+            self::$middleware = clone $this->app->middleware;
+        }
+
+        $middleware = clone self::$middleware;
+
+        $app     = $this->app;
+        $closure = function () use ($app) {
+            $this->app = $app;
+        };
+
+        $resetMiddleware = $closure->bindTo($middleware, $middleware);
+        $resetMiddleware();
+
+        $this->app->instance("middleware", $middleware);
+    }
 
     protected function loadRoutes(): void
     {

@@ -9,6 +9,7 @@ use Closure;
 use Countable;
 use Exception;
 use HZEX\TpSwoole\Container\Destroy\DestroyContract;
+use HZEX\TpSwoole\Container\Destroy\DestroyLog;
 use HZEX\TpSwoole\Coroutine\CoConstruct;
 use HZEX\TpSwoole\Coroutine\CoDestroy;
 use HZEX\TpSwoole\Resetters\ResetApp;
@@ -57,20 +58,19 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
      * @var array
      */
     private static $penetrates = [
-        ContainerInterface::class,
-        Container::class,
-        App::class,
-        VirtualContainer::class,
-        Config::class,
-        Console::class,
-        Env::class,
-        // Event::class,  // 泄漏了
+        ContainerInterface::class, // 确认安全
+        Container::class, // 确认安全
+        App::class, // 确认安全
+        VirtualContainer::class, // 确认安全
+        Config::class, // 确认安全
+        Console::class, // 确认安全
+        Env::class, // 确认安全
         Lang::class,
-        SwooleEvent::class,
-        Manager::class,
-        ConnectionPool::class,
-        'swoole.server',
-        Db::class,
+        SwooleEvent::class, // 确认安全
+        Manager::class, // 确认安全
+        ConnectionPool::class, // 确认安全
+        'swoole.server', // 确认安全
+        Db::class,  // 确认安全
     ];
 
     /**
@@ -136,6 +136,7 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
     private function setInitialDestroys(array $destroys)
     {
         $defaultDestroys = [
+            DestroyLog::class,
         ];
 
         $destroys = array_merge($defaultDestroys, $destroys);
