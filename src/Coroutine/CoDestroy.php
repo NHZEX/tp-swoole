@@ -6,6 +6,8 @@ namespace HZEX\TpSwoole\Coroutine;
 use Closure;
 use HZEX\TpSwoole\Container\Destroy\DestroyContract;
 use think\Container;
+use function gc_collect_cycles;
+use function stats_memory;
 
 class CoDestroy
 {
@@ -19,6 +21,10 @@ class CoDestroy
      */
     private $destroys = [];
 
+    private $config = [];
+
+    private $debug = false;
+
     /**
      * CoDestroy constructor.
      * @param Container         $container
@@ -28,6 +34,9 @@ class CoDestroy
     {
         $this->app = $container;
         $this->destroys = $destroys;
+
+        $this->config = $this->app->config->get('swoole', []);
+        $this->debug = $this->app->isDebug();
     }
 
     /**
@@ -52,6 +61,7 @@ class CoDestroy
      */
     public function __destruct()
     {
+
         foreach ($this->destroys as $destroy) {
             if ($destroy instanceof Closure) {
                 $destroy($this->app);
@@ -71,9 +81,13 @@ class CoDestroy
         $unsetApp();
 
         // 调试模式下尽快执行垃圾回收
-        if ($this->app->isDebug()) {
+        if ($this->debug) {
             // 强制执行垃圾回收
             gc_collect_cycles();
+        }
+
+        if ($this->debug && ($this->config['tracker'] ?? false)) {
+            stats_memory();
         }
     }
 }

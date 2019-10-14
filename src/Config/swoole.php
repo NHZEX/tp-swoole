@@ -72,6 +72,9 @@ return [
         'ping_interval' => 25000,
         'ping_timeout'  => 60000,
     ],
+    // 追踪器 (调试)
+    'tracker'          => true,
+    // 日志记录
     'log'              => [
         'console' => true,
         'channel' => [
@@ -83,7 +86,7 @@ return [
             'max_files' => 7,
         ],
     ],
-    //连接池
+    // 连接池
     'pool'       => [
         'db'    => [
             'enable'        => true,
