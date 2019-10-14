@@ -5,9 +5,7 @@ namespace HZEX\TpSwoole;
 
 use ArrayAccess;
 use ArrayIterator;
-use Closure;
 use Countable;
-use Exception;
 use HZEX\TpSwoole\Container\Destroy\DestroyContract;
 use HZEX\TpSwoole\Contract\ResetterInterface;
 use HZEX\TpSwoole\Coroutine\CoConstruct;
@@ -118,14 +116,7 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
     {
         parent::__construct($rootPath);
 
-        $this->instance(App::class, $this);
-        $this->instance(Container::class, $this);
-        $this->instance(VirtualContainer::class, $this);
-        $this->setInitialResetters();
-
-        parent::setInstance(Closure::fromCallable([self::class, 'getInstance']));
-
-        static::$vinstance = $this;
+        $this->initializeVc();
     }
 
     /**
@@ -199,53 +190,43 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
     }
 
     /**
-     * 获取当前容器的实例（单例）
-     * @access public
-     * @return Container
-     * @throws ReflectionException
+     * 初始化虚拟容器
      */
-    public static function getInstance(): Container
+    protected function initializeVc()
     {
-        $cid = Coroutine::getCid();
+        // 重新绑定必要类
+        $this->instance(App::class, $this);
+        $this->instance(Container::class, $this);
+        $this->instance(VirtualContainer::class, $this);
 
-        if (-1 === $cid) {
-            return static::$vinstance;
-        }
+        // 初始化重设器
+        $this->setInitialResetters();
 
-        $context = Coroutine::getContext();
+        // 注入容器生成器
+        parent::setInstance(function () {
+            $cid = Coroutine::getCid();
 
-        if (false === isset($context['__app'])) {
-            $context['__construct'] = new CoConstruct();
-            $context['__app'] = $app = static::$vinstance->newCloneContainer();
-            $context['__destroy'] = new CoDestroy($app, static::$vinstance->containerDestroy);
-        }
+            if (-1 === $cid) {
+                return static::$vinstance;
+            }
+            $context = Coroutine::getContext();
 
-        return $context['__app'];
-    }
+            if (false === isset($context['__app'])) {
+                $context['__construct'] = new CoConstruct();
+                $context['__app'] = $app = static::$vinstance->newCloneContainer();
+                $context['__destroy'] = new CoDestroy($app, static::$vinstance->containerDestroy);
+            }
 
-    /**
-     * 设置当前容器的实例
-     * @access public
-     * @param App $instance
-     * @return void
-     * @throws Exception
-     */
-    public static function setInstance($instance): void
-    {
-        $cid = Coroutine::getCid();
+            return $context['__app'];
+        });
 
-        if (-1 === $cid && $instance instanceof VirtualContainer) {
-            parent::setInstance($instance);
-            return;
-        }
-
-        throw new Exception('无效操作：协程中不能重新设置容器实例');
+        // 记住原始容器
+        static::$vinstance = $this;
     }
 
     /**
      * @param $name
      * @param $value
-     * @throws ReflectionException
      */
     public function __set($name, $value)
     {
@@ -255,7 +236,6 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
     /**
      * @param $name
      * @return object
-     * @throws ReflectionException
      */
     public function __get($name)
     {
@@ -265,7 +245,6 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
     /**
      * @param $name
      * @return bool
-     * @throws ReflectionException
      */
     public function __isset($name): bool
     {
@@ -274,7 +253,6 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
 
     /**
      * @param $name
-     * @throws ReflectionException
      */
     public function __unset($name)
     {
@@ -285,7 +263,6 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
      * Whether a offset exists
      * @param mixed $offset
      * @return bool
-     * @throws ReflectionException
      */
     public function offsetExists($offset)
     {
@@ -296,7 +273,6 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
      * Offset to retrieve
      * @param mixed $offset
      * @return mixed
-     * @throws ReflectionException
      */
     public function offsetGet($offset)
     {
@@ -307,7 +283,6 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
      * Offset to set
      * @param mixed $offset
      * @param mixed $value
-     * @throws ReflectionException
      */
     public function offsetSet($offset, $value)
     {
@@ -317,7 +292,6 @@ class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Co
     /**
      * Offset to unset
      * @param mixed $offset
-     * @throws ReflectionException
      */
     public function offsetUnset($offset)
     {
