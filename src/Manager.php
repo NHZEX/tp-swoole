@@ -20,6 +20,7 @@ use HZEX\TpSwoole\Worker\WebSocket;
 use HZEX\TpSwoole\Worker\WorkerPluginContract;
 use Psr\Log\LoggerInterface;
 use Swoole\Http\Server as HttpServer;
+use Swoole\Process;
 use Swoole\Runtime;
 use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
@@ -358,6 +359,14 @@ class Manager implements
     }
 
     /**
+     * @return PidManager
+     */
+    public function getPidManager(): PidManager
+    {
+        return $this->pidManager;
+    }
+
+    /**
      * 启动服务
      */
     public function start()
@@ -368,10 +377,20 @@ class Manager implements
     }
 
     /**
-     * Stop swoole server.
+     * 停止服务
      */
     public function stop()
     {
         ServerFacade::instance()->shutdown();
+    }
+
+    /**
+     * 重载服务
+     */
+    public function reload()
+    {
+        if (Process::kill($this->swoole->manager_pid, 0)) {
+            $this->swoole->reload();
+        }
     }
 }

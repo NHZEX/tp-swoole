@@ -79,7 +79,7 @@ class FileWatch extends BaseSubProcess
                             continue;
                         } else {
                             $this->logger->info("[update] $file <comment>reload</comment>");
-                            $this->manager->getSwoole()->reload();
+                            $this->manager->reload();
                             break;
                         }
                     }
