@@ -3,6 +3,7 @@
 namespace HZEX\TpSwoole\Resetters;
 
 use HZEX\TpSwoole\Contract\ResetterInterface;
+use HZEX\TpSwoole\Sandbox;
 use ReflectionException;
 use think\App;
 use think\Container;
@@ -17,12 +18,15 @@ use function HuangZx\ref_get_prop;
 class ResetHttp implements ResetterInterface
 {
     /**
-     * @param App $app
+     * "handle" function for resetting app.
+     *
+     * @param Container|App $container
+     * @param Sandbox       $sandbox
      * @throws ReflectionException
      */
-    public function handle(App $app): void
+    public function handle(App $container, Sandbox $sandbox): void
     {
-        $http = $app->make(Http::class);
-        ref_get_prop($http, 'app')->setValue($app);
+        $http = $container->make(Http::class);
+        ref_get_prop($http, 'app')->setValue($container);
     }
 }

@@ -3,6 +3,7 @@
 namespace HZEX\TpSwoole\Resetters;
 
 use HZEX\TpSwoole\Contract\ResetterInterface;
+use HZEX\TpSwoole\Sandbox;
 use think\App;
 use think\Container;
 
@@ -17,19 +18,20 @@ class ResetService implements ResetterInterface
     /**
      * "handle" function for resetting app.
      *
-     * @param App $container
+     * @param Container|App $container
+     * @param Sandbox       $sandbox
      */
-    public function handle(App $container): void
+    public function handle(App $container, Sandbox $sandbox): void
     {
-//        foreach ($sandbox->getServices() as $service) {
-//            $this->rebindServiceContainer($app, $service);
-//            if (method_exists($service, 'register')) {
-//                $service->register();
-//            }
-//            if (method_exists($service, 'boot')) {
-//                $app->invoke([$service, 'boot']);
-//            }
-//        }
+        foreach ($sandbox->getServices() as $service) {
+            $this->rebindServiceContainer($container, $service);
+            if (method_exists($service, 'register')) {
+                $service->register();
+            }
+            if (method_exists($service, 'boot')) {
+                $container->invoke([$service, 'boot']);
+            }
+        }
     }
 
     protected function rebindServiceContainer($app, $service)

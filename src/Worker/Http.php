@@ -9,6 +9,7 @@ use HZEX\TpSwoole\Contract\ResetterInterface;
 use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\Resetters\ResetHttp;
 use HZEX\TpSwoole\Resetters\ResetValidate;
+use HZEX\TpSwoole\Sandbox;
 use RuntimeException;
 use Swoole\Coroutine;
 use Swoole\Http\Request;
@@ -151,7 +152,7 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
     {
         $app = $this->getApp()->make(App::class);
         foreach ($this->resetters as $resetter) {
-            $resetter->handle($app);
+            $resetter->handle($app, $app->make(Sandbox::class));
         }
     }
 

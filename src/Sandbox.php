@@ -350,7 +350,7 @@ class Sandbox
     protected function resetApp(Container $app)
     {
         foreach ($this->resetters as $resetter) {
-            $resetter->handle($app);
+            $resetter->handle($app, $this);
         }
     }
 
