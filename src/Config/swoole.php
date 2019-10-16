@@ -79,7 +79,7 @@ return [
         'console' => true,
         'channel' => [
             // 日志保存目录
-            'path'      => env('LOG_FILE_PATH', runtime_path('log')),
+            'path'      => env('LOG_FILE_PATH', '') ?: runtime_path('log'),
             // 日志文件名
             'filename'  => 'server.log',
             // 最大日志文件数量
