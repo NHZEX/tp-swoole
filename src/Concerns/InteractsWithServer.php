@@ -39,8 +39,6 @@ trait InteractsWithServer
         });
         // 全局协程
         Runtime::enableCoroutine($this->config['enable_coroutine'] ?? false);
-        // 准备应用
-        $this->prepareApplication();
         // 事件触发
         $this->getEvent()->trigSwooleStart(func_get_args());
     }

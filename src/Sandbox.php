@@ -9,6 +9,7 @@ use HZEX\TpSwoole\Coroutine\CoConstruct;
 use HZEX\TpSwoole\Coroutine\CoDestroy;
 use HZEX\TpSwoole\Resetters\ResetApp;
 use HZEX\TpSwoole\Resetters\ResetEvent;
+use HZEX\TpSwoole\Tp\Pool\Cache;
 use HZEX\TpSwoole\Tp\Pool\Db;
 use HZEX\TpSwoole\Worker\ConnectionPool;
 use Psr\Container\ContainerInterface;
@@ -64,6 +65,7 @@ class Sandbox
         ConnectionPool::class,
         'swoole.server',
         Db::class,
+        Cache::class,
     ];
 
     /**
@@ -188,14 +190,10 @@ class Sandbox
         if (-1 === Coroutine::getCid()) {
             return $this->getBaseApp();
         }
-        if (!$this->getBaseApp() instanceof VirtualContainer) {
-            $this->setIniVirtualContainer();
-        }
         $snapshot = $this->getSnapshot();
         if ($snapshot instanceof Container) {
             return $snapshot;
         }
-
         $snapshot = clone $this->getBaseApp();
         $this->mirrorInstances($snapshot);
         $this->resetApp($snapshot);

@@ -14,6 +14,7 @@ use HZEX\TpSwoole\Log\MonologErrorHandler;
 use HZEX\TpSwoole\Process\FileWatch;
 use HZEX\TpSwoole\Task\SocketLogTask;
 use HZEX\TpSwoole\Task\TaskInterface;
+use HZEX\TpSwoole\Tp\Pool\Cache;
 use HZEX\TpSwoole\Tp\Pool\Db;
 use HZEX\TpSwoole\Worker\ConnectionPool;
 use HZEX\TpSwoole\Worker\Http;
@@ -86,6 +87,11 @@ class Manager implements
     private $exceptionRecord;
 
     /**
+     * @var Sandbox
+     */
+    private $sandbox;
+
+    /**
      * @var array
      */
     private $tasks = [
@@ -153,7 +159,7 @@ class Manager implements
     public function initialize()
     {
         // 加载沙箱
-        $this->app->make(Sandbox::class);
+        $this->sandbox = $this->app->make(Sandbox::class);
         // 初始化插件
         $this->initPlugins();
         // 注册任务处理
@@ -164,6 +170,8 @@ class Manager implements
         $this->initSubscribe();
         // 初始外部进程集
         $this->initProcess();
+        // 准备应用
+        $this->prepareApplication();
     }
 
     /**
@@ -174,6 +182,11 @@ class Manager implements
         // 绑定连接池
         if ($this->app->config->get('swoole.pool.db.enable', true)) {
             $this->app->bind('db', Db::class);
+            $this->app->instance('db', $this->app->make('db', [], true));
+        }
+        if ($this->app->config->get('pool.cache.enable', true)) {
+            $this->app->bind('cache', Cache::class);
+            $this->app->instance('cache', $this->app->make('cache', [], true));
         }
         // 预加载
         $this->prepareConcretes();
@@ -184,7 +197,7 @@ class Manager implements
      */
     protected function prepareConcretes()
     {
-        $defaultConcretes = ['db', 'cache',];
+        $defaultConcretes = [];
 
         foreach ($defaultConcretes as $concrete) {
             if ($this->app->exists($concrete)) {
