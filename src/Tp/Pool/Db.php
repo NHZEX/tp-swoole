@@ -42,7 +42,7 @@ class Db extends \think\Db
         }
 
         if (!exist_swoole() || -1 === Coroutine::getCid()) {
-            parent::instance(...func_get_args());
+            return parent::instance(...func_get_args());
         }
 
         $key = "db.connection.{$name}";

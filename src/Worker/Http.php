@@ -55,9 +55,6 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
         $event = $manager->getEvents();
         $event[] = 'Request';
         $manager->withEvents($event);
-
-        // 预加载
-        $this->getApp()->make('db');
         return true;
     }
 

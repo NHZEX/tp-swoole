@@ -7,6 +7,7 @@ use HZEX\TpSwoole\PidManager;
 use Psr\Log\LoggerInterface;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Process;
+use Swoole\Runtime;
 use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
 use unzxin\zswCore\Event;
@@ -36,6 +37,10 @@ trait InteractsWithServer
             echo PHP_EOL;
             $server->shutdown();
         });
+        // 全局协程
+        Runtime::enableCoroutine($this->config['enable_coroutine'] ?? false);
+        // 准备应用
+        $this->prepareApplication();
         // 事件触发
         $this->getEvent()->trigSwooleStart(func_get_args());
     }

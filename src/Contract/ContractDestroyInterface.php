@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace HZEX\TpSwoole\Container\Destroy;
+namespace HZEX\TpSwoole\Contract;
 
 use think\App;
 use think\Container;
 
-interface DestroyContract
+interface ContractDestroyInterface
 {
     /**
      * "handle" function for clean.

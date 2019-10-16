@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace HZEX\TpSwoole\Coroutine;
 
 use Closure;
-use HZEX\TpSwoole\Container\Destroy\DestroyContract;
+use HZEX\TpSwoole\Contract\ContractDestroyInterface;
 use think\Container;
 use function gc_collect_cycles;
 use function stats_memory;
@@ -17,7 +17,7 @@ class CoDestroy
     private $app;
 
     /**
-     * @var DestroyContract[]
+     * @var ContractDestroyInterface[]
      */
     private $destroys = [];
 
@@ -27,8 +27,8 @@ class CoDestroy
 
     /**
      * CoDestroy constructor.
-     * @param Container         $container
-     * @param DestroyContract[] $destroys
+     * @param Container                  $container
+     * @param ContractDestroyInterface[] $destroys
      */
     public function __construct(Container $container, array $destroys)
     {
@@ -41,9 +41,9 @@ class CoDestroy
 
     /**
      * 动态添加销毁处理器
-     * @param DestroyContract $contract
+     * @param ContractDestroyInterface $contract
      */
-    public function add(DestroyContract $contract)
+    public function add(ContractDestroyInterface $contract)
     {
         $this->destroys[] = $contract;
     }
@@ -61,7 +61,6 @@ class CoDestroy
      */
     public function __destruct()
     {
-
         foreach ($this->destroys as $destroy) {
             if ($destroy instanceof Closure) {
                 $destroy($this->app);

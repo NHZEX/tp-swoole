@@ -14,6 +14,7 @@ use HZEX\TpSwoole\Log\MonologErrorHandler;
 use HZEX\TpSwoole\Process\FileWatch;
 use HZEX\TpSwoole\Task\SocketLogTask;
 use HZEX\TpSwoole\Task\TaskInterface;
+use HZEX\TpSwoole\Tp\Pool\Db;
 use HZEX\TpSwoole\Worker\ConnectionPool;
 use HZEX\TpSwoole\Worker\Http;
 use HZEX\TpSwoole\Worker\WebSocket;
@@ -21,7 +22,6 @@ use HZEX\TpSwoole\Worker\WorkerPluginContract;
 use Psr\Log\LoggerInterface;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Process;
-use Swoole\Runtime;
 use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
 use think\App;
@@ -152,8 +152,8 @@ class Manager implements
      */
     public function initialize()
     {
-        // 加载虚拟容器配置
-        VirtualContainer::loadConfiguration();
+        // 加载沙箱
+        $this->app->make(Sandbox::class);
         // 初始化插件
         $this->initPlugins();
         // 注册任务处理
@@ -164,6 +164,17 @@ class Manager implements
         $this->initSubscribe();
         // 初始外部进程集
         $this->initProcess();
+    }
+
+    /**
+     * 准备应用
+     */
+    protected function prepareApplication()
+    {
+        // 绑定连接池
+        if ($this->app->config->get('swoole.pool.db.enable', true)) {
+            $this->app->bind('db', Db::class);
+        }
         // 预加载
         $this->prepareConcretes();
     }
@@ -372,7 +383,6 @@ class Manager implements
     public function start()
     {
         MonologConsoleHandler::setDaemon($this->config['server']['options']['daemonize'] ?? false);
-        Runtime::enableCoroutine($this->config['enable_coroutine'] ?? false);
         ServerFacade::instance()->start();
     }
 
