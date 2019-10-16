@@ -17,7 +17,7 @@ class ClearInstances implements ResetterInterface
      */
     public function handle(App $container, Sandbox $sandbox): void
     {
-        $instances = $container->config->get('swoole.instances', []);
+        $instances = $sandbox->getConfig()->get('swoole.instances', []);
 
         foreach ($instances as $instance) {
             $container->delete($instance);

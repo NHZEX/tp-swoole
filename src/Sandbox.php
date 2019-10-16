@@ -7,8 +7,10 @@ use HZEX\TpSwoole\Contract\ContractDestroyInterface;
 use HZEX\TpSwoole\Contract\ResetterInterface;
 use HZEX\TpSwoole\Coroutine\CoConstruct;
 use HZEX\TpSwoole\Coroutine\CoDestroy;
+use HZEX\TpSwoole\Resetters\ClearInstances;
 use HZEX\TpSwoole\Resetters\ResetApp;
 use HZEX\TpSwoole\Resetters\ResetEvent;
+use HZEX\TpSwoole\Resetters\ResetService;
 use HZEX\TpSwoole\Tp\Pool\Cache;
 use HZEX\TpSwoole\Tp\Pool\Db;
 use HZEX\TpSwoole\Worker\ConnectionPool;
@@ -323,12 +325,11 @@ class Sandbox
         $app = $this->getBaseApp();
 
         $resetters = [
-//            ClearInstances::class,
+            ClearInstances::class,
             ResetApp::class,
+            // ResetConfig::class,
             ResetEvent::class,
-//            ResetConfig::class,
-//            ResetEvent::class,
-//            ResetService::class,
+            ResetService::class,
         ];
 
         $resetters = array_merge($resetters, $this->config->get('swoole.resetters', []));

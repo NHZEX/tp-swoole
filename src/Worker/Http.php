@@ -7,8 +7,6 @@ use Closure;
 use Exception;
 use HZEX\TpSwoole\Contract\ResetterInterface;
 use HZEX\TpSwoole\Manager;
-use HZEX\TpSwoole\Resetters\ResetHttp;
-use HZEX\TpSwoole\Resetters\ResetValidate;
 use HZEX\TpSwoole\Sandbox;
 use RuntimeException;
 use Swoole\Coroutine;
@@ -129,9 +127,6 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
     protected function setInitialResetters()
     {
         $resetters = [
-            // ClearInstances::class,
-            ResetHttp::class,
-            ResetValidate::class,
         ];
 
         $resetters = array_merge($resetters, $this->getApp()->config->get('swoole.resetters', []));
