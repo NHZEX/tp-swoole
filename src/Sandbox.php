@@ -164,6 +164,15 @@ class Sandbox
         }
     }
 
+    /**
+     * 添加直通实例
+     * @param $class
+     */
+    public function addDirectInstances(string $class)
+    {
+        $this->direct[$this->getBaseApp()->getAlias($class)] = true;
+    }
+
     protected function setIniVirtualContainer()
     {
         $refVc = new ReflectionClass(VirtualContainer::class);

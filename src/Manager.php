@@ -355,6 +355,14 @@ class Manager implements
     }
 
     /**
+     * @return Sandbox
+     */
+    public function getSandbox(): Sandbox
+    {
+        return $this->sandbox;
+    }
+
+    /**
      * 更改监听事件
      * @param array $events
      * @return $this
