@@ -1,11 +1,12 @@
 <?php
 /** @noinspection PhpUnusedParameterInspection */
 
-namespace HZEX\TpSwoole\Worker;
+namespace HZEX\TpSwoole\Plugins;
 
 use Closure;
 use Exception;
 use HZEX\TpSwoole\Contract\ResetterInterface;
+use HZEX\TpSwoole\Contract\WorkerPluginContract;
 use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\Sandbox;
 use RuntimeException;

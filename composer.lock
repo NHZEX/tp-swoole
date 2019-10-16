@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bd8d3156890b9d06bba30b5bce4ebe42",
+    "content-hash": "481a5aa33bcd447865308b45d60b645d",
     "packages": [
         {
             "name": "league/flysystem",
-            "version": "1.0.55",
+            "version": "1.0.56",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/flysystem.git",
-                "reference": "33c91155537c6dc899eacdc54a13ac6303f156e6"
+                "reference": "90e3f83cb10ef6b058d70f95267030e7a6236518"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/flysystem/zipball/33c91155537c6dc899eacdc54a13ac6303f156e6",
-                "reference": "33c91155537c6dc899eacdc54a13ac6303f156e6",
+                "url": "https://api.github.com/repos/thephpleague/flysystem/zipball/90e3f83cb10ef6b058d70f95267030e7a6236518",
+                "reference": "90e3f83cb10ef6b058d70f95267030e7a6236518",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -94,7 +94,7 @@
                 "sftp",
                 "storage"
             ],
-            "time": "2019-08-24T11:17:19+00:00"
+            "time": "2019-10-12T13:05:59+00:00"
         },
         {
             "name": "league/flysystem-cached-adapter",
@@ -238,16 +238,16 @@
         },
         {
             "name": "nhzex/n-helper",
-            "version": "1.1.3",
+            "version": "v1.1.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/NHZEX/n-helper.git",
-                "reference": "43832bd2005fd49575603835b8c3ebf02dccaf2b"
+                "reference": "58211bb436fb825219fc8e674bc73f7bf8ded456"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/NHZEX/n-helper/zipball/43832bd2005fd49575603835b8c3ebf02dccaf2b",
-                "reference": "43832bd2005fd49575603835b8c3ebf02dccaf2b",
+                "url": "https://api.github.com/repos/NHZEX/n-helper/zipball/58211bb436fb825219fc8e674bc73f7bf8ded456",
+                "reference": "58211bb436fb825219fc8e674bc73f7bf8ded456",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -267,11 +267,7 @@
                 "symfony/var-exporter": "^4.2"
             },
             "require-dev": {
-                "phpunit/phpunit": "^8.1",
-                "topthink/framework": "^5.1.35"
-            },
-            "suggest": {
-                "topthink/framework": "think命令行扩展支持"
+                "phpunit/phpunit": "^7|^8"
             },
             "type": "library",
             "autoload": {
@@ -296,20 +292,20 @@
                 }
             ],
             "description": "助手",
-            "time": "2019-09-20T03:52:31+00:00"
+            "time": "2019-10-14T08:17:42+00:00"
         },
         {
             "name": "nhzex/zsw-core",
-            "version": "v1.3.0",
+            "version": "v1.3.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/NHZEX/zsw-core.git",
-                "reference": "8b89752eea2b09593a96ee6fdeaaae318a189248"
+                "reference": "a5553f67fa1fed23b4bf2d4501db4d4f349ccae1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/NHZEX/zsw-core/zipball/8b89752eea2b09593a96ee6fdeaaae318a189248",
-                "reference": "8b89752eea2b09593a96ee6fdeaaae318a189248",
+                "url": "https://api.github.com/repos/NHZEX/zsw-core/zipball/a5553f67fa1fed23b4bf2d4501db4d4f349ccae1",
+                "reference": "a5553f67fa1fed23b4bf2d4501db4d4f349ccae1",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -349,7 +345,7 @@
                 }
             ],
             "description": "zx swoole core",
-            "time": "2019-10-09T08:42:09+00:00"
+            "time": "2019-10-10T10:18:48+00:00"
         },
         {
             "name": "open-smf/connection-pool",
@@ -1020,12 +1016,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/top-think/framework.git",
-                "reference": "768f12f01daa0bd96ef4ad8771d80fb6fec137c8"
+                "reference": "6217ae4a9e9beb0c7426e427b535d14f1fe4ab90"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/top-think/framework/zipball/768f12f01daa0bd96ef4ad8771d80fb6fec137c8",
-                "reference": "768f12f01daa0bd96ef4ad8771d80fb6fec137c8",
+                "url": "https://api.github.com/repos/top-think/framework/zipball/6217ae4a9e9beb0c7426e427b535d14f1fe4ab90",
+                "reference": "6217ae4a9e9beb0c7426e427b535d14f1fe4ab90",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -1080,7 +1076,7 @@
                 "orm",
                 "thinkphp"
             ],
-            "time": "2019-10-09T07:30:48+00:00"
+            "time": "2019-10-14T14:00:20+00:00"
         },
         {
             "name": "topthink/think-helper",
@@ -1133,12 +1129,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/top-think/think-orm.git",
-                "reference": "01f530a70a31b461557937ea75a7713862418b32"
+                "reference": "8ef883759fc94512bf5c62468c8dc0d8dc176afe"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/top-think/think-orm/zipball/01f530a70a31b461557937ea75a7713862418b32",
-                "reference": "01f530a70a31b461557937ea75a7713862418b32",
+                "url": "https://api.github.com/repos/top-think/think-orm/zipball/8ef883759fc94512bf5c62468c8dc0d8dc176afe",
+                "reference": "8ef883759fc94512bf5c62468c8dc0d8dc176afe",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -1176,7 +1172,7 @@
                 "database",
                 "orm"
             ],
-            "time": "2019-09-27T12:49:28+00:00"
+            "time": "2019-10-11T01:34:19+00:00"
         }
     ],
     "packages-dev": [

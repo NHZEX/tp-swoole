@@ -6,7 +6,7 @@ namespace HZEX\TpSwoole;
 use ArrayAccess;
 use ArrayIterator;
 use Countable;
-use HZEX\TpSwoole\Worker\Http;
+use HZEX\TpSwoole\Plugins\Http;
 use IteratorAggregate;
 use ReflectionException;
 use ReflectionObject;

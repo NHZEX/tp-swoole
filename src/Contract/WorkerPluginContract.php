@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace HZEX\TpSwoole\Worker;
+namespace HZEX\TpSwoole\Contract;
 
 use HZEX\TpSwoole\Manager;
 

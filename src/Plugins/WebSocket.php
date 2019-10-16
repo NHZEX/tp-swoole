@@ -1,9 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace HZEX\TpSwoole\Worker;
+namespace HZEX\TpSwoole\Plugins;
 
 use Closure;
+use HZEX\TpSwoole\Contract\WorkerPluginContract;
 use HZEX\TpSwoole\Log\MonologErrorHandler;
 use HZEX\TpSwoole\Manager;
 use HZEX\TpSwoole\WebSocket\HandlerContract;

@@ -1,10 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace HZEX\TpSwoole\Worker;
+namespace HZEX\TpSwoole\Plugins;
 
 use Closure;
 use HZEX\TpSwoole\ConnectionPool\CoroutineMySQLConnector;
+use HZEX\TpSwoole\Contract\WorkerPluginContract;
 use HZEX\TpSwoole\Manager;
 use Smf\ConnectionPool\ConnectionPool as SmfConnectionPool;
 use Smf\ConnectionPool\ConnectionPoolTrait;
