@@ -123,6 +123,7 @@ class Sandbox
         $this->setInitialCleans();
         $this->setDirectInstances();
 
+        $this->setIniVirtualContainer();
         Container::setInstance(function () {
             return $this->getApplication();
         });

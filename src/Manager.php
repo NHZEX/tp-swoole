@@ -160,6 +160,7 @@ class Manager implements
     {
         // 加载沙箱
         $this->sandbox = $this->app->make(Sandbox::class);
+        $this->app = $this->sandbox->getBaseApp();
         // 初始化插件
         $this->initPlugins();
         // 注册任务处理
