@@ -5,6 +5,7 @@ namespace HZEX\TpSwoole\Tp\Pool;
 
 use HZEX\TpSwoole\Concerns\InteractsWithPool;
 use HZEX\TpSwoole\Tp\Pool\Cache\Store;
+use RuntimeException;
 use Swoole\Coroutine;
 
 class Cache extends \think\Cache
@@ -53,7 +54,7 @@ class Cache extends \think\Cache
             $store = $pool->pop($this->getMaxWaitTime());
 
             if ($store === false) {
-                throw new \RuntimeException(sprintf(
+                throw new RuntimeException(sprintf(
                     'Borrow the connection timeout in %.2f(s), connections in pool: %d, all connections: %d',
                     $this->getMaxWaitTime(),
                     $pool->length(),

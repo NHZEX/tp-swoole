@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "481a5aa33bcd447865308b45d60b645d",
+    "content-hash": "1c11c8c544cd8822628576abb88d1b2d",
     "packages": [
         {
             "name": "league/flysystem",
-            "version": "1.0.56",
+            "version": "1.0.57",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/flysystem.git",
-                "reference": "90e3f83cb10ef6b058d70f95267030e7a6236518"
+                "reference": "0e9db7f0b96b9f12dcf6f65bc34b72b1a30ea55a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/flysystem/zipball/90e3f83cb10ef6b058d70f95267030e7a6236518",
-                "reference": "90e3f83cb10ef6b058d70f95267030e7a6236518",
+                "url": "https://api.github.com/repos/thephpleague/flysystem/zipball/0e9db7f0b96b9f12dcf6f65bc34b72b1a30ea55a",
+                "reference": "0e9db7f0b96b9f12dcf6f65bc34b72b1a30ea55a",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -94,7 +94,7 @@
                 "sftp",
                 "storage"
             ],
-            "time": "2019-10-12T13:05:59+00:00"
+            "time": "2019-10-16T21:01:05+00:00"
         },
         {
             "name": "league/flysystem-cached-adapter",
@@ -402,16 +402,16 @@
         },
         {
             "name": "opis/closure",
-            "version": "3.4.0",
+            "version": "3.4.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/opis/closure.git",
-                "reference": "60a97fff133b1669a5b1776aa8ab06db3f3962b7"
+                "reference": "e79f851749c3caa836d7ccc01ede5828feb762c7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/opis/closure/zipball/60a97fff133b1669a5b1776aa8ab06db3f3962b7",
-                "reference": "60a97fff133b1669a5b1776aa8ab06db3f3962b7",
+                "url": "https://api.github.com/repos/opis/closure/zipball/e79f851749c3caa836d7ccc01ede5828feb762c7",
+                "reference": "e79f851749c3caa836d7ccc01ede5828feb762c7",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -465,7 +465,7 @@
                 "serialization",
                 "serialize"
             ],
-            "time": "2019-09-02T21:07:33+00:00"
+            "time": "2019-10-19T18:38:51+00:00"
         },
         {
             "name": "psr/cache",
@@ -576,16 +576,16 @@
         },
         {
             "name": "psr/log",
-            "version": "1.1.0",
+            "version": "1.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-fig/log.git",
-                "reference": "6c001f1daafa3a3ac1d8ff69ee4db8e799a654dd"
+                "reference": "bf73deb2b3b896a9d9c75f3f0d88185d2faa27e2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-fig/log/zipball/6c001f1daafa3a3ac1d8ff69ee4db8e799a654dd",
-                "reference": "6c001f1daafa3a3ac1d8ff69ee4db8e799a654dd",
+                "url": "https://api.github.com/repos/php-fig/log/zipball/bf73deb2b3b896a9d9c75f3f0d88185d2faa27e2",
+                "reference": "bf73deb2b3b896a9d9c75f3f0d88185d2faa27e2",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -600,7 +600,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "1.0.x-dev"
+                    "dev-master": "1.1.x-dev"
                 }
             },
             "autoload": {
@@ -625,7 +625,7 @@
                 "psr",
                 "psr-3"
             ],
-            "time": "2018-11-20T15:27:04+00:00"
+            "time": "2019-10-25T08:06:51+00:00"
         },
         {
             "name": "psr/simple-cache",
@@ -1012,16 +1012,16 @@
         },
         {
             "name": "topthink/framework",
-            "version": "6.0.x-dev",
+            "version": "v6.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/top-think/framework.git",
-                "reference": "6217ae4a9e9beb0c7426e427b535d14f1fe4ab90"
+                "reference": "79c555aab0313d1a33ddcdb3c395f2c47f37f597"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/top-think/framework/zipball/6217ae4a9e9beb0c7426e427b535d14f1fe4ab90",
-                "reference": "6217ae4a9e9beb0c7426e427b535d14f1fe4ab90",
+                "url": "https://api.github.com/repos/top-think/framework/zipball/79c555aab0313d1a33ddcdb3c395f2c47f37f597",
+                "reference": "79c555aab0313d1a33ddcdb3c395f2c47f37f597",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -1076,7 +1076,7 @@
                 "orm",
                 "thinkphp"
             ],
-            "time": "2019-10-14T14:00:20+00:00"
+            "time": "2019-10-23T23:28:43+00:00"
         },
         {
             "name": "topthink/think-helper",
@@ -1125,16 +1125,16 @@
         },
         {
             "name": "topthink/think-orm",
-            "version": "2.0.x-dev",
+            "version": "v2.0.27",
             "source": {
                 "type": "git",
                 "url": "https://github.com/top-think/think-orm.git",
-                "reference": "8ef883759fc94512bf5c62468c8dc0d8dc176afe"
+                "reference": "02affaaccade2cdd8bbb2d2f5d15e46113e6eb50"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/top-think/think-orm/zipball/8ef883759fc94512bf5c62468c8dc0d8dc176afe",
-                "reference": "8ef883759fc94512bf5c62468c8dc0d8dc176afe",
+                "url": "https://api.github.com/repos/top-think/think-orm/zipball/02affaaccade2cdd8bbb2d2f5d15e46113e6eb50",
+                "reference": "02affaaccade2cdd8bbb2d2f5d15e46113e6eb50",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -1172,7 +1172,7 @@
                 "database",
                 "orm"
             ],
-            "time": "2019-10-11T01:34:19+00:00"
+            "time": "2019-10-23T02:16:50+00:00"
         }
     ],
     "packages-dev": [
@@ -1927,16 +1927,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "8.4.1",
+            "version": "8.4.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "366a4a0f2b971fd43b7c351d621e8dd7d7131869"
+                "reference": "a142a7e66c0ea7b5b6c04ee27f08d10d1137cd9b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/366a4a0f2b971fd43b7c351d621e8dd7d7131869",
-                "reference": "366a4a0f2b971fd43b7c351d621e8dd7d7131869",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/a142a7e66c0ea7b5b6c04ee27f08d10d1137cd9b",
+                "reference": "a142a7e66c0ea7b5b6c04ee27f08d10d1137cd9b",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -2012,7 +2012,7 @@
                 "testing",
                 "xunit"
             ],
-            "time": "2019-10-07T12:57:41+00:00"
+            "time": "2019-10-28T10:39:51+00:00"
         },
         {
             "name": "sebastian/code-unit-reverse-lookup",
@@ -2703,16 +2703,16 @@
         },
         {
             "name": "swoft/swoole-ide-helper",
-            "version": "v4.4.7",
+            "version": "v4.4.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/swoft-cloud/swoole-ide-helper.git",
-                "reference": "0e4b21fd8d47c4047a421fcea809850a8da707b5"
+                "reference": "dfbe372cca6baccd362bc276aa07c5d65b2c1b36"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/swoft-cloud/swoole-ide-helper/zipball/0e4b21fd8d47c4047a421fcea809850a8da707b5",
-                "reference": "0e4b21fd8d47c4047a421fcea809850a8da707b5",
+                "url": "https://api.github.com/repos/swoft-cloud/swoole-ide-helper/zipball/dfbe372cca6baccd362bc276aa07c5d65b2c1b36",
+                "reference": "dfbe372cca6baccd362bc276aa07c5d65b2c1b36",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -2733,7 +2733,7 @@
                 "swoft",
                 "swoole"
             ],
-            "time": "2019-09-26T09:15:01+00:00"
+            "time": "2019-10-17T09:54:14+00:00"
         },
         {
             "name": "symfony/polyfill-ctype",
@@ -2904,10 +2904,7 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": {
-        "topthink/framework": 20,
-        "topthink/think-orm": 20
-    },
+    "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

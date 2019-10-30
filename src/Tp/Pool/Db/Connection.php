@@ -2,11 +2,13 @@
 
 namespace HZEX\TpSwoole\Tp\Pool\Db;
 
+use Exception;
 use HZEX\TpSwoole\Concerns\InteractsWithPoolConnector;
 use Psr\SimpleCache\CacheInterface;
 use think\db\BaseQuery;
 use think\db\ConnectionInterface;
 use think\DbManager;
+use Throwable;
 
 /**
  * Class Connection
@@ -122,8 +124,8 @@ class Connection implements ConnectionInterface
      * @param BaseQuery $query   查询对象
      * @param mixed     $dataSet 数据集
      * @return integer
-     * @throws \Exception
-     * @throws \Throwable
+     * @throws Exception
+     * @throws Throwable
      */
     public function insertAll(BaseQuery $query, array $dataSet = []): int
     {
@@ -183,7 +185,7 @@ class Connection implements ConnectionInterface
      * @access public
      * @param callable $callback 数据操作方法回调
      * @return mixed
-     * @throws \Throwable
+     * @throws Throwable
      */
     public function transaction(callable $callback)
     {
@@ -194,7 +196,7 @@ class Connection implements ConnectionInterface
      * 启动事务
      * @access public
      * @return void
-     * @throws \Exception
+     * @throws Exception
      */
     public function startTrans()
     {
