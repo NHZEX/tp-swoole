@@ -9,6 +9,8 @@ use think\Container;
 
 class ClearInstances implements ResetterInterface
 {
+    protected $default = ['log'];
+
     /**
      * "handle" function for resetting app.
      *
@@ -17,7 +19,7 @@ class ClearInstances implements ResetterInterface
      */
     public function handle(App $container, Sandbox $sandbox): void
     {
-        $instances = $sandbox->getConfig()->get('swoole.instances', []);
+        $instances = array_merge($this->default, $sandbox->getConfig()->get('swoole.instances', []));
 
         foreach ($instances as $instance) {
             $container->delete($instance);

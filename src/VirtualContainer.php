@@ -3,11 +3,8 @@ declare(strict_types=1);
 
 namespace HZEX\TpSwoole;
 
-use ArrayAccess;
 use ArrayIterator;
-use Countable;
 use HZEX\TpSwoole\Plugins\Http;
-use IteratorAggregate;
 use ReflectionException;
 use ReflectionObject;
 use think\App;
@@ -18,7 +15,7 @@ use Traversable;
  * @mixin App
  * @package HZEX\TpSwoole
  */
-class VirtualContainer extends App implements ArrayAccess, IteratorAggregate, Countable
+class VirtualContainer extends App
 {
     /**
      * @param $name

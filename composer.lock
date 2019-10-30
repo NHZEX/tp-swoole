@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1c11c8c544cd8822628576abb88d1b2d",
+    "content-hash": "71478d463bbcafaec81909b8c9018589",
     "packages": [
         {
             "name": "league/flysystem",
@@ -238,16 +238,16 @@
         },
         {
             "name": "nhzex/n-helper",
-            "version": "v1.1.4",
+            "version": "1.1.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/NHZEX/n-helper.git",
-                "reference": "58211bb436fb825219fc8e674bc73f7bf8ded456"
+                "reference": "e0a07b88b5bcbbe0f298b424c0262dfacc770a20"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/NHZEX/n-helper/zipball/58211bb436fb825219fc8e674bc73f7bf8ded456",
-                "reference": "58211bb436fb825219fc8e674bc73f7bf8ded456",
+                "url": "https://api.github.com/repos/NHZEX/n-helper/zipball/e0a07b88b5bcbbe0f298b424c0262dfacc770a20",
+                "reference": "e0a07b88b5bcbbe0f298b424c0262dfacc770a20",
                 "shasum": "",
                 "mirrors": [
                     {
@@ -292,7 +292,7 @@
                 }
             ],
             "description": "助手",
-            "time": "2019-10-14T08:17:42+00:00"
+            "time": "2019-10-30T06:50:31+00:00"
         },
         {
             "name": "nhzex/zsw-core",

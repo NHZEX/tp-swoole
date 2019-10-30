@@ -10,6 +10,7 @@ use HZEX\TpSwoole\Coroutine\CoDestroy;
 use HZEX\TpSwoole\Plugins\ConnectionPool;
 use HZEX\TpSwoole\Resetters\ClearInstances;
 use HZEX\TpSwoole\Resetters\ResetApp;
+use HZEX\TpSwoole\Resetters\ResetDb;
 use HZEX\TpSwoole\Resetters\ResetEvent;
 use HZEX\TpSwoole\Resetters\ResetService;
 use HZEX\TpSwoole\Tp\Pool\Cache;
@@ -27,6 +28,7 @@ use think\Env;
 use think\Event;
 use think\service\PaginatorService;
 use unzxin\zswCore\Event as SwooleEvent;
+use function HuangZx\ref_copy_prop_value;
 use function HuangZx\ref_get_prop;
 
 class Sandbox
@@ -123,7 +125,7 @@ class Sandbox
         $this->setInitialCleans();
         $this->setDirectInstances();
 
-        $this->setIniVirtualContainer();
+        $this->iniVirtualContainer();
         Container::setInstance(function () {
             return $this->getApplication();
         });
@@ -174,20 +176,22 @@ class Sandbox
         $this->direct[$this->getBaseApp()->getAlias($class)] = true;
     }
 
-    protected function setIniVirtualContainer()
+
+    protected function iniVirtualContainer()
     {
+        if ($this->getBaseApp() instanceof VirtualContainer) {
+            return;
+        }
         $refVc = new ReflectionClass(VirtualContainer::class);
         /** @var VirtualContainer $vc */
         $vc = $refVc->newInstanceWithoutConstructor();
-        $refVc = new ReflectionObject($vc);
         $baseApp = $this->getBaseApp();
         $refApp = new ReflectionObject($baseApp);
         foreach ($refApp->getProperties() as $property) {
-            /** @noinspection PhpUnhandledExceptionInspection */
-            $refVcp = $refVc->getProperty($property->getName());
-            $refVcp->setAccessible(true);
-            $property->setAccessible(true);
-            $refVcp->setValue($vc, $property->getValue($baseApp));
+            if ($property->isStatic()) {
+                continue;
+            }
+            ref_copy_prop_value($baseApp, $vc, $property->getName());
         }
         $this->setInstance($vc);
         $this->setBaseApp($vc);
@@ -208,8 +212,8 @@ class Sandbox
         }
         $snapshot = clone $this->getBaseApp();
         $this->mirrorInstances($snapshot);
-        $this->resetApp($snapshot);
         $this->setContext($snapshot);
+        $this->resetApp($snapshot);
 
         return $snapshot;
     }
@@ -258,7 +262,9 @@ class Sandbox
     public function setInstance(Container $app)
     {
         $app->instance('app', $app);
+        $app->instance(App::class, $app);
         $app->instance(Container::class, $app);
+        $app->instance(ContainerInterface::class, $app);
     }
 
     /**
