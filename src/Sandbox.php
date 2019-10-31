@@ -14,8 +14,6 @@ use HZEX\TpSwoole\Resetters\ResetDb;
 use HZEX\TpSwoole\Resetters\ResetEvent;
 use HZEX\TpSwoole\Resetters\ResetService;
 use Psr\Container\ContainerInterface;
-use ReflectionClass;
-use ReflectionObject;
 use RuntimeException;
 use Swoole\Coroutine;
 use think\App;
@@ -24,7 +22,6 @@ use think\Container;
 use think\Event;
 use think\service\PaginatorService;
 use unzxin\zswCore\Event as SwooleEvent;
-use function HuangZx\ref_copy_prop_value;
 use function HuangZx\ref_get_prop;
 
 class Sandbox
@@ -119,7 +116,6 @@ class Sandbox
         $this->setInitialCleans();
         $this->setDirectInstances();
 
-        //$this->iniVirtualContainer();
         Container::setInstance(function () {
             return $this->getApplication();
         });
@@ -159,7 +155,6 @@ class Sandbox
         foreach ($this->penetrates as $penetrate) {
             $this->direct[$app->getAlias($penetrate)] = true;
         }
-        dump($this->direct);
     }
 
     /**
@@ -169,27 +164,6 @@ class Sandbox
     public function addDirectInstances(string $class): void
     {
         $this->direct[$this->getBaseApp()->getAlias($class)] = true;
-    }
-
-
-    protected function iniVirtualContainer(): void
-    {
-        if ($this->getBaseApp() instanceof VirtualContainer) {
-            return;
-        }
-        $refVc = new ReflectionClass(VirtualContainer::class);
-        /** @var VirtualContainer $vc */
-        $vc = $refVc->newInstanceWithoutConstructor();
-        $baseApp = $this->getBaseApp();
-        $refApp = new ReflectionObject($baseApp);
-        foreach ($refApp->getProperties() as $property) {
-            if ($property->isStatic()) {
-                continue;
-            }
-            ref_copy_prop_value($baseApp, $vc, $property->getName());
-        }
-        $this->setInstance($vc);
-        $this->setBaseApp($vc);
     }
 
     /**

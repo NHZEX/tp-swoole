@@ -42,6 +42,8 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
      */
     public function isReady(Manager $manager): bool
     {
+        $manager->getApp()->bind('request', \HZEX\TpSwoole\Tp\Request::class);
+        $manager->getApp()->bind(\think\Http::class, \HZEX\TpSwoole\Tp\Http::class);
         return $manager->getSwoole() instanceof HttpServer;
     }
 

@@ -20,7 +20,6 @@ use HZEX\TpSwoole\Task\SocketLogTask;
 use HZEX\TpSwoole\Task\TaskInterface;
 use HZEX\TpSwoole\Tp\Pool\Cache;
 use HZEX\TpSwoole\Tp\Pool\Db;
-use HZEX\TpSwoole\Tp\Request;
 use HZEX\TpSwoole\VirtualContainer as SwooleApp;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -39,7 +38,6 @@ use unzxin\zswCore\Contract\Events\SwooleWorkerInterface;
 use unzxin\zswCore\Contract\EventSubscribeInterface;
 use unzxin\zswCore\Event;
 use unzxin\zswCore\ProcessPool;
-use function HuangZx\debug_value;
 
 class Manager implements
     SwooleServerInterface,
@@ -172,7 +170,6 @@ class Manager implements
         $this->prepareApplication();
         // 加载沙箱
         $this->sandbox = $this->app->make(Sandbox::class);
-        // $this->app = $this->sandbox->getBaseApp();
         // 初始化插件
         $this->initPlugins();
         // 注册任务处理
@@ -194,8 +191,6 @@ class Manager implements
             $this->app = new SwooleApp($this->container->getRootPath());
             $this->app->bind(SwooleApp::class, App::class);
             $this->app->bind(ContainerInterface::class, Container::class);
-            $this->app->bind('request', Request::class);
-            $this->app->bind(\think\Http::class, Tp\Http::class);
             $this->app->instance(Manager::class, $this);
             $this->app->instance('swoole.server', $this->container->make('swoole.server'));
             $this->app->instance(PidManager::class, $this->container->make(PidManager::class));
@@ -213,8 +208,6 @@ class Manager implements
             $this->app->initialize();
             // 预加载
             $this->prepareConcretes();
-            dump(debug_value((array) $this->container->getIterator()));
-            dump(debug_value((array) $this->app->getIterator()));
         }
     }
 
@@ -378,6 +371,14 @@ class Manager implements
     public function getEvents()
     {
         return $this->events;
+    }
+
+    /**
+     * @return VirtualContainer
+     */
+    public function getApp(): VirtualContainer
+    {
+        return $this->app;
     }
 
     /**
