@@ -5,12 +5,10 @@ namespace HZEX\TpSwoole;
 use HZEX\TpSwoole\Container\ClearLogDestroy;
 use HZEX\TpSwoole\Contract\ContractDestroyInterface;
 use HZEX\TpSwoole\Contract\ResetterInterface;
-use HZEX\TpSwoole\Coroutine\CoConstruct;
-use HZEX\TpSwoole\Coroutine\CoDestroy;
+use HZEX\TpSwoole\Coroutine\ContextDestroy;
 use HZEX\TpSwoole\Plugins\ConnectionPool;
 use HZEX\TpSwoole\Resetters\ClearInstances;
 use HZEX\TpSwoole\Resetters\ResetApp;
-use HZEX\TpSwoole\Resetters\ResetDb;
 use HZEX\TpSwoole\Resetters\ResetEvent;
 use HZEX\TpSwoole\Resetters\ResetService;
 use HZEX\TpSwoole\Tp\Pool\Cache;
@@ -239,9 +237,8 @@ class Sandbox
     protected function setContext(Container $snapshot)
     {
         $cxt = Coroutine::getContext();
-        $cxt['__construct'] = new CoConstruct();
         $cxt['__app'] = $snapshot;
-        $cxt['__destroy'] = new CoDestroy($snapshot, $this->containerDestroy);
+        $cxt['__destroy'] = new ContextDestroy($snapshot, $this->containerDestroy);
     }
 
     /**

@@ -7,14 +7,6 @@ use Swoole\Coroutine;
 
 class Context
 {
-
-    /**
-     * The data in different coroutine environment.
-     *
-     * @var array
-     */
-    protected static $data = [];
-
     /**
      * Get data by current coroutine id.
      *
@@ -81,5 +73,13 @@ class Context
     {
         $ctx = Coroutine::getContext();
         return array_keys($ctx);
+    }
+
+    /**
+     * Get current coroutine id.
+     */
+    public static function getCoroutineId()
+    {
+        return Coroutine::getuid();
     }
 }
