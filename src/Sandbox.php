@@ -2,37 +2,35 @@
 
 namespace HZEX\TpSwoole;
 
+use Closure;
 use HZEX\TpSwoole\Container\ClearLogDestroy;
 use HZEX\TpSwoole\Contract\ContractDestroyInterface;
 use HZEX\TpSwoole\Contract\ResetterInterface;
-use HZEX\TpSwoole\Coroutine\CoConstruct;
-use HZEX\TpSwoole\Coroutine\CoDestroy;
-use HZEX\TpSwoole\Plugins\ConnectionPool;
+use HZEX\TpSwoole\Coroutine\Context;
+use HZEX\TpSwoole\Coroutine\ContextDestroy;
 use HZEX\TpSwoole\Resetters\ClearInstances;
 use HZEX\TpSwoole\Resetters\ResetApp;
-use HZEX\TpSwoole\Resetters\ResetDb;
+use HZEX\TpSwoole\Resetters\ResetConfig;
 use HZEX\TpSwoole\Resetters\ResetEvent;
 use HZEX\TpSwoole\Resetters\ResetService;
-use HZEX\TpSwoole\Tp\Pool\Cache;
-use HZEX\TpSwoole\Tp\Pool\Db;
 use Psr\Container\ContainerInterface;
-use ReflectionClass;
-use ReflectionObject;
 use RuntimeException;
-use Swoole\Coroutine;
 use think\App;
 use think\Config;
-use think\Console;
 use think\Container;
-use think\Env;
 use think\Event;
 use think\service\PaginatorService;
-use unzxin\zswCore\Event as SwooleEvent;
-use function HuangZx\ref_copy_prop_value;
-use function HuangZx\ref_get_prop;
+use Throwable;
 
 class Sandbox
 {
+    /**
+     * The app containers in different coroutine environment.
+     *
+     * @var array
+     */
+    protected $snapshots = [];
+
     /** @var Manager */
     protected $manager;
 
@@ -52,33 +50,6 @@ class Sandbox
     protected $containerDestroy = [];
 
     /**
-     * 不拷贝容器镜像的实例
-     * @var array
-     */
-    private $penetrates = [
-        ContainerInterface::class,
-        Container::class,
-        App::class,
-        VirtualContainer::class,
-        Sandbox::class,
-        Config::class,
-        Console::class,
-        Env::class,
-        SwooleEvent::class,
-        Manager::class,
-        ConnectionPool::class,
-        'swoole.server',
-        Db::class,
-        Cache::class,
-    ];
-
-    /**
-     * 直传实例
-     * @var array
-     */
-    protected $direct = [];
-
-    /**
      * 实例化沙箱
      * Sandbox constructor.
      * @param Container $app
@@ -88,7 +59,6 @@ class Sandbox
     {
         $this->manager = $manager;
         $this->setBaseApp($app);
-
         $this->initialize();
     }
 
@@ -118,17 +88,15 @@ class Sandbox
      */
     protected function initialize()
     {
+        Container::setInstance(function () {
+            return $this->getApplication();
+        });
+
         $this->setInitialConfig();
         $this->setInitialServices();
         $this->setInitialEvent();
         $this->setInitialResetters();
-        $this->setInitialCleans();
-        $this->setDirectInstances();
-
-        $this->iniVirtualContainer();
-        Container::setInstance(function () {
-            return $this->getApplication();
-        });
+        // $this->setInitialCleans();
 
         return $this;
     }
@@ -154,47 +122,36 @@ class Sandbox
         }
     }
 
-    /**
-     * 初始化直传实例
-     */
-    protected function setDirectInstances()
+
+    public function run(Closure $callable, $fd = null, $persistent = false)
     {
-        $penetrates = $this->config->get('swoole.penetrates', []);
-        $this->penetrates = array_merge($this->penetrates, $penetrates);
-        $app = $this->getBaseApp();
-        foreach ($this->penetrates as $penetrate) {
-            $this->direct[$app->getAlias($penetrate)] = true;
+        $this->init($fd);
+
+        try {
+            $this->getApplication()->invoke($callable, [$this]);
+        } catch (Throwable $e) {
+            $this->manager->logServerError($e);
+        } finally {
+            $this->clear(!$persistent);
         }
     }
 
-    /**
-     * 添加直通实例
-     * @param $class
-     */
-    public function addDirectInstances(string $class)
+    public function init($fd = null)
     {
-        $this->direct[$this->getBaseApp()->getAlias($class)] = true;
+        if (!is_null($fd)) {
+            Context::setData('_fd', $fd);
+        }
+        $this->setInstance($app = $this->getApplication());
+        $this->resetApp($app);
     }
 
-
-    protected function iniVirtualContainer()
+    public function clear($snapshot = true)
     {
-        if ($this->getBaseApp() instanceof VirtualContainer) {
-            return;
+        if ($snapshot) {
+            unset($this->snapshots[$this->getSnapshotId()]);
         }
-        $refVc = new ReflectionClass(VirtualContainer::class);
-        /** @var VirtualContainer $vc */
-        $vc = $refVc->newInstanceWithoutConstructor();
-        $baseApp = $this->getBaseApp();
-        $refApp = new ReflectionObject($baseApp);
-        foreach ($refApp->getProperties() as $property) {
-            if ($property->isStatic()) {
-                continue;
-            }
-            ref_copy_prop_value($baseApp, $vc, $property->getName());
-        }
-        $this->setInstance($vc);
-        $this->setBaseApp($vc);
+
+        $this->setInstance($this->getBaseApp());
     }
 
     /**
@@ -203,56 +160,46 @@ class Sandbox
      */
     public function getApplication()
     {
-        if (-1 === Coroutine::getCid()) {
-            return $this->getBaseApp();
-        }
         $snapshot = $this->getSnapshot();
         if ($snapshot instanceof Container) {
             return $snapshot;
         }
         $snapshot = clone $this->getBaseApp();
-        $this->mirrorInstances($snapshot);
         $this->setContext($snapshot);
         $this->resetApp($snapshot);
 
         return $snapshot;
     }
 
-    protected function mirrorInstances(Container $snapshot)
-    {
-        /** @noinspection PhpUnhandledExceptionInspection */
-        $instancesRef = ref_get_prop($snapshot, 'instances');
-        /** @var array $instances */
-        $instances = $instancesRef->getValue();
-        foreach ($instances as $class => $object) {
-            if (isset($this->direct[$class]) || isset($this->direct[get_class($object)])) {
-                $instances[$class] = $object;
-            } else {
-                $instances[$class] = clone $object;
-            }
-        }
-        $instancesRef->setValue($instances);
-
-        $this->setInstance($snapshot);
-    }
-
     protected function setContext(Container $snapshot)
     {
-        $cxt = Coroutine::getContext();
-        $cxt['__construct'] = new CoConstruct();
-        $cxt['__app'] = $snapshot;
-        $cxt['__destroy'] = new CoDestroy($snapshot, $this->containerDestroy);
+        Context::setData('__app', $snapshot);
+        Context::setData('__destroy', new ContextDestroy($snapshot, $this->containerDestroy));
+    }
+
+    protected function getSnapshotId()
+    {
+        if ($fd = Context::getData('_fd')) {
+            return "fd_" . $fd;
+        } else {
+            return Context::getCoroutineId();
+        }
     }
 
     /**
-     * 获取容器快照
      * Get current snapshot.
      * @return App|null
      */
     public function getSnapshot()
     {
-        $cxt = Coroutine::getContext();
-        return $cxt['__app'] ?? null;
+        return $this->snapshots[$this->getSnapshotId()] ?? null;
+    }
+
+    public function setSnapshot(Container $snapshot)
+    {
+        $this->snapshots[$this->getSnapshotId()] = $snapshot;
+
+        return $this;
     }
 
     /**
@@ -343,7 +290,7 @@ class Sandbox
         $resetters = [
             ClearInstances::class,
             ResetApp::class,
-            // ResetConfig::class,
+            ResetConfig::class,
             ResetEvent::class,
             ResetService::class,
         ];

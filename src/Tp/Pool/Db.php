@@ -3,9 +3,9 @@
 namespace HZEX\TpSwoole\Tp\Pool;
 
 use HZEX\TpSwoole\Concerns\InteractsWithPool;
+use HZEX\TpSwoole\Coroutine\Context;
 use HZEX\TpSwoole\Tp\Pool\Db\Connection;
-use RuntimeException;
-use Swoole\Coroutine;
+use Swoole\Coroutine\Channel;
 use think\Config;
 use think\db\ConnectionInterface;
 
@@ -18,14 +18,14 @@ class Db extends \think\Db
 {
     use InteractsWithPool;
 
-    protected function getMaxActive()
+    protected function getPoolMaxActive($name): int
     {
         return $this->config->get('swoole.pool.db.max_active', 3);
     }
 
-    protected function getMaxWaitTime()
+    protected function getPoolMaxWaitTime($name): int
     {
-        return $this->config->get('swoole.pool.db.max_wait_time', 5);
+        return $this->config->get('swoole.pool.db.max_wait_time', 3);
     }
 
     /**
@@ -41,46 +41,23 @@ class Db extends \think\Db
             $name = $this->getConfig('default', 'mysql');
         }
 
-        if (!exist_swoole() || -1 === Coroutine::getCid()) {
-            return parent::instance(...func_get_args());
+        if ($force) {
+            return $this->createConnection($name);
         }
 
-        $key = "db.connection.{$name}";
-        $cxt = Coroutine::getContext();
-        if (isset($cxt[$key])) {
-            return $cxt[$key];
-        }
-        $pool = function () use ($force, $name) {
+        return Context::rememberData("db.connection.{$name}", function () use ($name) {
+            return $this->getPoolConnection($name);
+        });
+    }
 
-            $pool = $this->getPool($name);
+    protected function buildPoolConnection($connection, Channel $pool)
+    {
+        return new Connection($connection, $pool);
+    }
 
-            if (!isset($this->connectionCount[$name])) {
-                $this->connectionCount[$name] = 0;
-            }
-
-            if ($this->connectionCount[$name] < $this->getMaxActive()) {
-                //新建
-                if (!$force) {
-                    $this->connectionCount[$name]++;
-                }
-                return new Connection($this->createConnection($name), $pool, !$force);
-            }
-
-            $connection = $pool->pop($this->getMaxWaitTime());
-
-            if ($connection === false) {
-                throw new RuntimeException(sprintf(
-                    'Borrow the connection timeout in %.2f(s), connections in pool: %d, all connections: %d',
-                    $this->getMaxWaitTime(),
-                    $pool->length(),
-                    $this->connectionCount[$name] ?? 0
-                ));
-            }
-
-            return new Connection($connection, $pool);
-        };
-
-        return $cxt[$key] = $pool();
+    protected function createPoolConnection(string $name)
+    {
+        return $this->createConnection($name);
     }
 
     protected function getConnectionConfig(string $name): array

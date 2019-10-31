@@ -1,6 +1,6 @@
 <?php
 
-use HZEX\TpSwoole\Facade\Server;
+use HZEX\TpSwoole\Service;
 
 define('HZEX_SWOOLE_ENABLE', extension_loaded('swoole') && 'cli' === PHP_SAPI);
 
@@ -32,5 +32,5 @@ function stats_memory()
         $diff = $curr - $last;
         $last = $curr;
     }
-    dump(sprintf('[mem#%d] max: %d (%d), inc: %+d', Server::instance()->worker_id, $max, $curr, $diff ?? 0));
+    dump(sprintf('[mem#%d] max: %d (%d), inc: %+d', Service::getServer()->worker_id, $max, $curr, $diff ?? 0));
 }

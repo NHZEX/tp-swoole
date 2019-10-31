@@ -9,7 +9,7 @@ use think\Container;
 use function gc_collect_cycles;
 use function stats_memory;
 
-class CoDestroy
+class ContextDestroy
 {
     /**
      * @var Container
@@ -61,23 +61,23 @@ class CoDestroy
      */
     public function __destruct()
     {
-        foreach ($this->destroys as $destroy) {
-            if ($destroy instanceof Closure) {
-                $destroy($this->app);
-            } else {
-                $destroy->handle($this->app);
-            }
-        }
-
-        $unset = function () {
-            /** @noinspection PhpUndefinedFieldInspection */
-            foreach ($this->instances as $key => $instance) {
-                /** @noinspection PhpUndefinedFieldInspection */
-                unset($this->instances[$key]);
-            }
-        };
-        $unsetApp = $unset->bindTo($this->app, $this->app);
-        $unsetApp();
+//        foreach ($this->destroys as $destroy) {
+//            if ($destroy instanceof Closure) {
+//                $destroy($this->app);
+//            } else {
+//                $destroy->handle($this->app);
+//            }
+//        }
+//
+//        $unset = function () {
+//            /** @noinspection PhpUndefinedFieldInspection */
+//            foreach ($this->instances as $key => $instance) {
+//                /** @noinspection PhpUndefinedFieldInspection */
+//                unset($this->instances[$key]);
+//            }
+//        };
+//        $unsetApp = $unset->bindTo($this->app, $this->app);
+//        $unsetApp();
 
         // 调试模式下尽快执行垃圾回收
         if ($this->debug) {

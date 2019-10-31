@@ -82,4 +82,12 @@ class Context
         $ctx = Coroutine::getContext();
         return array_keys($ctx);
     }
+
+    /**
+     * Get current coroutine id.
+     */
+    public static function getCoroutineId()
+    {
+        return Coroutine::getuid();
+    }
 }

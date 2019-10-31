@@ -80,8 +80,7 @@ class Connection implements ConnectionInterface
      */
     public function close()
     {
-        $this->returnToPool();
-        return $this;
+        return $this->handler->close();
     }
 
     /**

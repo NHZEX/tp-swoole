@@ -18,11 +18,13 @@ use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
 use think\App;
 use think\console\Output;
+use think\Cookie;
 use think\exception\Handle;
 use Throwable;
 use unzxin\zswCore\Contract\Events\SwooleHttpInterface;
 use unzxin\zswCore\Contract\EventSubscribeInterface;
 use unzxin\zswCore\Event;
+use function HuangZx\debug_value;
 
 class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeInterface
 {
@@ -31,8 +33,12 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
      */
     protected $resetters = [];
 
-    public function __construct()
+    protected $manager;
+
+    public function __construct(Manager $manager, App $app)
     {
+        $this->manager = $manager;
+        dump(debug_value($app));
     }
 
     /**
@@ -55,6 +61,7 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
         $event = $manager->getEvents();
         $event[] = 'Request';
         $manager->withEvents($event);
+        $manager->getApp()->bind(\think\Http::class, \HZEX\TpSwoole\Tp\Http::class);
         return true;
     }
 
@@ -64,11 +71,6 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
         $event->onSwooleWorkerStart(Closure::fromCallable([$this, 'onStart']));
         $event->onSwooleWorkerError(Closure::fromCallable([$this, 'onError']));
         $event->onSwooleRequest(Closure::fromCallable([$this, 'onRequest']));
-    }
-
-    public function getApp(): App
-    {
-        return App::getInstance();
     }
 
     /**
@@ -130,10 +132,10 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
         $resetters = [
         ];
 
-        $resetters = array_merge($resetters, $this->getApp()->config->get('swoole.resetters', []));
+        $resetters = array_merge($resetters, $this->manager->getApp()->config->get('swoole.resetters', []));
 
         foreach ($resetters as $resetter) {
-            $resetterClass = $this->getApp()->make($resetter);
+            $resetterClass = $this->manager->getApp()->make($resetter);
             if (!$resetterClass instanceof ResetterInterface) {
                 throw new RuntimeException("{$resetter} must implement " . ResetterInterface::class);
             }
@@ -146,7 +148,7 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
      */
     public function resetApp()
     {
-        $app = $this->getApp()->make(App::class);
+        $app = $this->manager->getApp()->make(App::class);
         foreach ($this->resetters as $resetter) {
             $resetter->handle($app, $app->make(Sandbox::class));
         }
@@ -161,59 +163,49 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
         $header = $req->header ?: [];
         $server = $req->server ?: [];
 
-        // 暂时性兼容request类型限制的解决方案
-        if (isset($server['server_port'])) {
-            $server['server_port'] = (string) $server['server_port'];
-        }
-        if (isset($server['remote_port'])) {
-            $server['remote_port'] = (string) $server['remote_port'];
-        }
-
         foreach ($header as $key => $value) {
             $server["http_" . str_replace('-', '_', $key)] = $value;
         }
 
         // 重新实例化请求对象 处理swoole请求数据
         /** @var \HZEX\TpSwoole\Tp\Request $request */
-        $request = $this->getApp()->request;
+        $request = $this->manager->getApp()->make('request', [], true);
         $queryStr = !empty($req->server['query_string']) ? '?' . $req->server['query_string'] : '';
         $request = $request
-            ->withHeader($header)
             ->withServer($server)
             ->withGet($req->get ?: [])
+            ->withPost($req->post ?: [])
             ->withCookie($req->cookie ?: [])
             ->withInput($req->rawContent())
             ->withFiles($req->files ?: [])
             ->setBaseUrl($req->server['request_uri'])
             ->setUrl($req->server['request_uri'] . $queryStr)
-            ->setPathinfo(ltrim($req->server['path_info'], '/'))
-            ->withPost($req->post ?: $request->getInputData($request->getInput()))
-            ->withPut($request->getInputData($request->getInput()));
+            ->setPathinfo(ltrim($req->server['path_info'], '/'));
 
+        // ->withPost($req->post ?: $request->getInputData($request->getInput()))
+        // ->withPut($request->getInputData($request->getInput()));
         return $request;
     }
 
     /**
+     * @param Response        $swResponse
      * @param \think\Response $thinkResponse
-     * @param Response        $swooleResponse
+     * @param Cookie          $cookie
      */
-    protected function sendResponse(\think\Response $thinkResponse, Response $swooleResponse)
+    protected function sendResponse(Response $swResponse, \think\Response $thinkResponse, Cookie $cookie)
     {
-        // 获取数据
-        $data = $thinkResponse->getContent();
-
         // 发送Header
         foreach ($thinkResponse->getHeader() as $key => $val) {
-            $swooleResponse->header($key, $val);
+            $swResponse->header($key, $val);
         }
 
         // 发送状态码
-        $swooleResponse->status($thinkResponse->getCode());
+        $swResponse->status($thinkResponse->getCode());
 
-        foreach ($this->getApp()->cookie->getCookie() as $name => $val) {
+        foreach ($this->manager->getApp()->cookie->getCookie() as $name => $val) {
             list($value, $expire, $option) = $val;
 
-            $swooleResponse->cookie(
+            $swResponse->cookie(
                 $name,
                 $value,
                 $expire,
@@ -224,7 +216,9 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
             );
         }
 
-        $swooleResponse->end($data);
+        $content = $thinkResponse->getContent();
+
+        $swResponse->end($content);
     }
 
     /**
@@ -234,7 +228,7 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
     public function run(\think\Request $request)
     {
         /** @var \think\Http $http */
-        $http = $this->getApp()->make(\think\Http::class);
+        $http = $this->manager->getApp()->make(\think\Http::class);
         $response = $http->run($request);
         $http->end($response);
         return $response;
@@ -248,29 +242,27 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
      */
     public function onRequest(Request $sRequest, Response $sResponse): void
     {
-        try {
+        $this->manager->runInSandbox(function (\think\Http $http, Event $event, App $app) use ($sRequest, $sResponse) {
             self::setHandleHttpRequest();
-            $request = $this->prepareRequest($sRequest);
-            $this->resetApp();
-            $response = $this->run($request);
-            $this->sendResponse($response, $sResponse);
-            // 请求完成
-            $this->requestEnd();
-        } catch (Throwable $e) {
-            if (isset($request)) {
-                try {
-                    /** @var Handle $handle */
-                    $handle = $this->getApp()->make(Handle::class);
-                    $exceptionResponse = $handle->render($request, $e);
 
-                    $this->sendResponse($exceptionResponse, $sResponse);
-                } catch (Throwable $e) {
-                    $this->logServerError($e);
-                }
-            } else {
-                $this->logServerError($e);
+            $request = $this->prepareRequest($sRequest);
+            try {
+                $response = $this->handleRequest($http, $request);
+            } catch (Throwable $e) {
+                $response = $this->manager->getApp()
+                    ->make(Handle::class)
+                    ->render($request, $e);
             }
-        }
+
+            $this->sendResponse($sResponse, $response, $app->cookie);
+        });
+    }
+
+    protected function handleRequest(\think\Http $http, $request)
+    {
+        $response = $http->run($request);
+        $http->end($response);
+        return $response;
     }
 
     public function requestEnd()
@@ -285,7 +277,7 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
     public function logServerError(Throwable $e)
     {
         /** @var Handle $handle */
-        $handle = $this->getApp()->make(Handle::class);
+        $handle = $this->manager->getApp()->make(Handle::class);
 
         $handle->renderForConsole(new Output(), $e);
 
