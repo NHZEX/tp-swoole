@@ -20,6 +20,9 @@ use HZEX\TpSwoole\Task\SocketLogTask;
 use HZEX\TpSwoole\Task\TaskInterface;
 use HZEX\TpSwoole\Tp\Pool\Cache;
 use HZEX\TpSwoole\Tp\Pool\Db;
+use HZEX\TpSwoole\Tp\Request;
+use HZEX\TpSwoole\VirtualContainer as SwooleApp;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Process;
@@ -27,6 +30,7 @@ use Swoole\Server;
 use Swoole\WebSocket\Server as WsServer;
 use think\App;
 use think\console\Output;
+use think\Container;
 use unzxin\zswCore\Contract\Events\SwooleHttpInterface;
 use unzxin\zswCore\Contract\Events\SwoolePipeMessageInterface;
 use unzxin\zswCore\Contract\Events\SwooleServerInterface;
@@ -35,6 +39,7 @@ use unzxin\zswCore\Contract\Events\SwooleWorkerInterface;
 use unzxin\zswCore\Contract\EventSubscribeInterface;
 use unzxin\zswCore\Event;
 use unzxin\zswCore\ProcessPool;
+use function HuangZx\debug_value;
 
 class Manager implements
     SwooleServerInterface,
@@ -59,7 +64,12 @@ class Manager implements
     private $output;
 
     /**
-     * @var App $app
+     * @var App
+     */
+    protected $container;
+
+    /**
+     * @var SwooleApp $app
      */
     private $app;
 
@@ -132,17 +142,17 @@ class Manager implements
 
     /**
      * Manager constructor.
-     * @param App        $app
+     * @param App        $container
      * @param PidManager $pidManager
      */
-    public function __construct(App $app, PidManager $pidManager)
+    public function __construct(App $container, PidManager $pidManager)
     {
-        $this->app = $app;
+        $this->container  = $container;
         $this->pidManager = $pidManager;
 
         $this->instanceId = crc32(spl_object_hash($this));
         $this->swoole = ServerFacade::instance();
-        $this->config = $this->app->config->get('swoole');
+        $this->config = $container->config->get('swoole');
         $this->subscribes = $this->config['events'] ?? [];
         $this->tasks = array_merge($this->tasks, $this->config['tasks'] ?? []);
         $this->plugins = array_merge($this->plugins, $this->config['plugins'] ?? []);
@@ -158,9 +168,11 @@ class Manager implements
      */
     public function initialize()
     {
+        // 准备应用
+        $this->prepareApplication();
         // 加载沙箱
         $this->sandbox = $this->app->make(Sandbox::class);
-        $this->app = $this->sandbox->getBaseApp();
+        // $this->app = $this->sandbox->getBaseApp();
         // 初始化插件
         $this->initPlugins();
         // 注册任务处理
@@ -171,8 +183,6 @@ class Manager implements
         $this->initSubscribe();
         // 初始外部进程集
         $this->initProcess();
-        // 准备应用
-        $this->prepareApplication();
     }
 
     /**
@@ -180,17 +190,32 @@ class Manager implements
      */
     protected function prepareApplication()
     {
-        // 绑定连接池
-        if ($this->app->config->get('swoole.pool.db.enable', true)) {
-            $this->app->bind('db', Db::class);
-            $this->app->instance('db', $this->app->make('db', [], true));
+        if (!$this->app instanceof SwooleApp) {
+            $this->app = new SwooleApp($this->container->getRootPath());
+            $this->app->bind(SwooleApp::class, App::class);
+            $this->app->bind(ContainerInterface::class, Container::class);
+            $this->app->bind('request', Request::class);
+            $this->app->bind(\think\Http::class, Tp\Http::class);
+            $this->app->instance(Manager::class, $this);
+            $this->app->instance('swoole.server', $this->container->make('swoole.server'));
+            $this->app->instance(PidManager::class, $this->container->make(PidManager::class));
+            // 基础基础实例
+            $this->getEvent()->setResolver(new EventResolver());
+            // 绑定连接池
+            if ($this->app->config->get('swoole.pool.db.enable', true)) {
+                $this->app->delete('db');
+                $this->app->bind('db', Db::class);
+            }
+            if ($this->app->config->get('pool.cache.enable', true)) {
+                $this->app->delete('cache');
+                $this->app->bind('cache', Cache::class);
+            }
+            $this->app->initialize();
+            // 预加载
+            $this->prepareConcretes();
+            dump(debug_value((array) $this->container->getIterator()));
+            dump(debug_value((array) $this->app->getIterator()));
         }
-        if ($this->app->config->get('pool.cache.enable', true)) {
-            $this->app->bind('cache', Cache::class);
-            $this->app->instance('cache', $this->app->make('cache', [], true));
-        }
-        // 预加载
-        $this->prepareConcretes();
     }
 
     /**
@@ -198,7 +223,7 @@ class Manager implements
      */
     protected function prepareConcretes()
     {
-        $defaultConcretes = [];
+        $defaultConcretes = ['db', 'cache', 'event'];
 
         foreach ($defaultConcretes as $concrete) {
             if ($this->app->exists($concrete)) {
@@ -388,7 +413,7 @@ class Manager implements
      */
     public function getEvent(): Event
     {
-        return $this->app->make(App::class)->make(Event::class);
+        return $this->app->make(Event::class);
     }
 
     /**

@@ -5,14 +5,14 @@ namespace HZEX\TpSwoole;
 use HZEX\TpSwoole\Container\ClearLogDestroy;
 use HZEX\TpSwoole\Contract\ContractDestroyInterface;
 use HZEX\TpSwoole\Contract\ResetterInterface;
+use HZEX\TpSwoole\Coroutine\Context;
 use HZEX\TpSwoole\Coroutine\ContextDestroy;
 use HZEX\TpSwoole\Plugins\ConnectionPool;
 use HZEX\TpSwoole\Resetters\ClearInstances;
 use HZEX\TpSwoole\Resetters\ResetApp;
+use HZEX\TpSwoole\Resetters\ResetDb;
 use HZEX\TpSwoole\Resetters\ResetEvent;
 use HZEX\TpSwoole\Resetters\ResetService;
-use HZEX\TpSwoole\Tp\Pool\Cache;
-use HZEX\TpSwoole\Tp\Pool\Db;
 use Psr\Container\ContainerInterface;
 use ReflectionClass;
 use ReflectionObject;
@@ -20,9 +20,7 @@ use RuntimeException;
 use Swoole\Coroutine;
 use think\App;
 use think\Config;
-use think\Console;
 use think\Container;
-use think\Env;
 use think\Event;
 use think\service\PaginatorService;
 use unzxin\zswCore\Event as SwooleEvent;
@@ -59,15 +57,13 @@ class Sandbox
         App::class,
         VirtualContainer::class,
         Sandbox::class,
-        Config::class,
-        Console::class,
-        Env::class,
         SwooleEvent::class,
         Manager::class,
         ConnectionPool::class,
+        'app',
         'swoole.server',
-        Db::class,
-        Cache::class,
+        'db',
+        'cache',
     ];
 
     /**
@@ -95,7 +91,7 @@ class Sandbox
      * @param Container $app
      * @return $this
      */
-    public function setBaseApp(Container $app)
+    public function setBaseApp(Container $app): self
     {
         $this->app = $app;
 
@@ -105,7 +101,7 @@ class Sandbox
     /**
      * @return App 获取基本容器
      */
-    public function getBaseApp()
+    public function getBaseApp(): App
     {
         return $this->app;
     }
@@ -114,7 +110,7 @@ class Sandbox
      * 初始化沙箱
      * @return $this
      */
-    protected function initialize()
+    protected function initialize(): self
     {
         $this->setInitialConfig();
         $this->setInitialServices();
@@ -123,7 +119,7 @@ class Sandbox
         $this->setInitialCleans();
         $this->setDirectInstances();
 
-        $this->iniVirtualContainer();
+        //$this->iniVirtualContainer();
         Container::setInstance(function () {
             return $this->getApplication();
         });
@@ -134,7 +130,7 @@ class Sandbox
     /**
      * 初始化清理器
      */
-    protected function setInitialCleans()
+    protected function setInitialCleans(): void
     {
         $destroys = $this->config->get('swoole.container.destroy', []);
         $defaultDestroys = [
@@ -155,7 +151,7 @@ class Sandbox
     /**
      * 初始化直传实例
      */
-    protected function setDirectInstances()
+    protected function setDirectInstances(): void
     {
         $penetrates = $this->config->get('swoole.penetrates', []);
         $this->penetrates = array_merge($this->penetrates, $penetrates);
@@ -163,19 +159,20 @@ class Sandbox
         foreach ($this->penetrates as $penetrate) {
             $this->direct[$app->getAlias($penetrate)] = true;
         }
+        dump($this->direct);
     }
 
     /**
      * 添加直通实例
      * @param $class
      */
-    public function addDirectInstances(string $class)
+    public function addDirectInstances(string $class): void
     {
         $this->direct[$this->getBaseApp()->getAlias($class)] = true;
     }
 
 
-    protected function iniVirtualContainer()
+    protected function iniVirtualContainer(): void
     {
         if ($this->getBaseApp() instanceof VirtualContainer) {
             return;
@@ -199,7 +196,7 @@ class Sandbox
      * 获取容器
      * @return App|null
      */
-    public function getApplication()
+    public function getApplication(): ?App
     {
         if (-1 === Coroutine::getCid()) {
             return $this->getBaseApp();
@@ -216,7 +213,7 @@ class Sandbox
         return $snapshot;
     }
 
-    protected function mirrorInstances(Container $snapshot)
+    protected function mirrorInstances(Container $snapshot): void
     {
         /** @noinspection PhpUnhandledExceptionInspection */
         $instancesRef = ref_get_prop($snapshot, 'instances');
@@ -234,11 +231,10 @@ class Sandbox
         $this->setInstance($snapshot);
     }
 
-    protected function setContext(Container $snapshot)
+    protected function setContext(Container $snapshot): void
     {
-        $cxt = Coroutine::getContext();
-        $cxt['__app'] = $snapshot;
-        $cxt['__destroy'] = new ContextDestroy($snapshot, $this->containerDestroy);
+        Context::setData('__app', $snapshot);
+        Context::setData('__destroy', new ContextDestroy($snapshot, $this->containerDestroy));
     }
 
     /**
@@ -246,17 +242,16 @@ class Sandbox
      * Get current snapshot.
      * @return App|null
      */
-    public function getSnapshot()
+    public function getSnapshot(): ?App
     {
-        $cxt = Coroutine::getContext();
-        return $cxt['__app'] ?? null;
+        return Context::getData('__app', null);
     }
 
     /**
      * 重设容器实例
      * @param Container $app
      */
-    public function setInstance(Container $app)
+    public function setInstance(Container $app): void
     {
         $app->instance('app', $app);
         $app->instance(App::class, $app);
@@ -268,7 +263,7 @@ class Sandbox
      * 拷贝 Config 副本
      * Set initial config.
      */
-    protected function setInitialConfig()
+    protected function setInitialConfig(): void
     {
         $this->config = clone $this->getBaseApp()->config;
     }
@@ -276,7 +271,7 @@ class Sandbox
     /**
      * 拷贝 Event 副本
      */
-    protected function setInitialEvent()
+    protected function setInitialEvent(): void
     {
         $this->event = clone $this->getBaseApp()->event;
     }
@@ -285,7 +280,7 @@ class Sandbox
      * 获取 Config
      * Get config snapshot.
      */
-    public function getConfig()
+    public function getConfig(): Config
     {
         return $this->config;
     }
@@ -294,7 +289,7 @@ class Sandbox
      * 获取 Event
      * @return Event
      */
-    public function getEvent()
+    public function getEvent(): Event
     {
         return $this->event;
     }
@@ -303,7 +298,7 @@ class Sandbox
      * 获取服务重设器
      * @return array
      */
-    public function getServices()
+    public function getServices(): array
     {
         return $this->services;
     }
@@ -311,7 +306,7 @@ class Sandbox
     /**
      * 初始化服务重设器
      */
-    protected function setInitialServices()
+    protected function setInitialServices(): void
     {
         $app = $this->getBaseApp();
 
@@ -333,7 +328,7 @@ class Sandbox
      * 设置通用重设器
      * Initialize resetters.
      */
-    protected function setInitialResetters()
+    protected function setInitialResetters(): void
     {
         $app = $this->getBaseApp();
 
@@ -343,6 +338,7 @@ class Sandbox
             // ResetConfig::class,
             ResetEvent::class,
             ResetService::class,
+            ResetDb::class,
         ];
 
         $resetters = array_merge($resetters, $this->config->get('swoole.resetters', []));
@@ -361,7 +357,7 @@ class Sandbox
      *
      * @param Container|App $app
      */
-    protected function resetApp(Container $app)
+    protected function resetApp(Container $app): void
     {
         foreach ($this->resetters as $resetter) {
             $resetter->handle($app, $this);

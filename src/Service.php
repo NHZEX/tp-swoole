@@ -4,16 +4,12 @@ declare(strict_types=1);
 namespace HZEX\TpSwoole;
 
 use HZEX\TpSwoole\Command\ServerCommand;
-use HZEX\TpSwoole\Tp\Request;
 use InvalidArgumentException;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Logger;
-use Psr\Container\ContainerInterface;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Server as Server;
 use Swoole\WebSocket\Server as WebsocketServer;
-use think\Container;
-use think\Http;
 use unzxin\zswCore\Event as SwooleEvent;
 
 class Service extends \think\Service
@@ -47,7 +43,7 @@ class Service extends \think\Service
         $this->isWebsocket = $this->app->config->get('swoole.websocket.enabled', false);
 
         $this->app->bind('swoole.server', function () {
-            if (is_null(static::$server)) {
+            if (null === static::$server) {
                 $this->createSwooleServer();
             }
             return static::$server;
@@ -56,11 +52,7 @@ class Service extends \think\Service
         $this->app->bind(PidManager::class, function () {
             return new PidManager($this->app->config->get('swoole.server.options.pid_file'));
         });
-        $this->app->bind(ContainerInterface::class, Container::class);
         $this->app->bind('manager', Manager::class);
-        $this->app->bind('request', Request::class);
-        $this->app->bind(Http::class, Tp\Http::class);
-        Facade\SwooleEvent::instance()->setResolver(new EventResolver());
 
         $this->initLogger();
         return true;
