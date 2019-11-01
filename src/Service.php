@@ -77,6 +77,26 @@ class Service extends \think\Service
     {
         $config = $this->app->config->get('swoole.server');
 
+        [$host, $port] = $this->parseListen($config);
+
+        $socketType = $config['socket_type'] ?? SWOOLE_SOCK_TCP;
+        $mode       = $config['mode'] ?? SWOOLE_PROCESS;
+
+        $server         = $this->isWebsocket ? WebsocketServer::class : HttpServer::class;
+        static::$server = new $server($host, $port, $mode, $socketType);
+
+        $options = array_merge($config['options'] ?? [], [
+            'task_enable_coroutine' => true,
+            'send_yield'            => true,
+            'reload_async'          => true,
+            'enable_coroutine'      => true,
+        ]);
+
+        static::$server->set($options);
+    }
+
+    protected function parseListen(array $config)
+    {
         if (empty($config['listen'])) {
             $host = $config['host'];
             $port = $config['port'];
@@ -94,13 +114,7 @@ class Service extends \think\Service
             throw new InvalidArgumentException("rpc server listen port invalid: {$port}");
         }
 
-        $socketType = $config['socket_type'] ?? SWOOLE_SOCK_TCP;
-        $mode       = $config['mode'] ?? SWOOLE_PROCESS;
-
-        $server         = $this->isWebsocket ? WebsocketServer::class : HttpServer::class;
-        static::$server = new $server($host, (int) $port, $mode, $socketType);
-
-        static::$server->set($config['options'] ?? []);
+        return [$host, (int) $port];
     }
 
     protected function initLogger()
