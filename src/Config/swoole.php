@@ -1,43 +1,20 @@
 <?php
 
 return [
-    'hot_reload'       => [
-        'enable'  => false,
-        'name'    => ['*.php'],
-        'notName' => [],
-        'include' => [app_path()],
-        'exclude' => [],
-    ],
-    'enable_coroutine' => false,
-    'resetters'        => [],
-    'penetrates'       => [],
-    'process'          => [],
-    'tasks'            => [],
-    'events'           => [],
-    'pools'            => [],
-    'container'        => [
-        'destroy' => [],
-    ],
-    'health'           => null,
-    'memory_limit'     => '512M',
-    'server'           => [
+    'server'       => [
         'listen'    => null, // 监听(存在则优先)
         'host'      => '0.0.0.0', // 监听地址
         'port'      => 9501, // 监听端口
         'mode'      => SWOOLE_PROCESS, // 运行模式 默认为SWOOLE_PROCESS
         'sock_type' => SWOOLE_TCP, // sock type 默认为SWOOLE_SOCK_TCP
         'options'   => [
-            'daemonize'        => false,
-            'dispatch_mode'    => 2, //固定模式
-            'worker_num'       => 1,
-            'enable_coroutine' => false,
-
-            'task_worker_num'       => 4,
-            'task_enable_coroutine' => false,
-
+            'daemonize'                => false,
+            'dispatch_mode'            => 2, //固定模式
+            'worker_num'               => 1,
+            'task_worker_num'          => 4,
+            // 运行时文件
             'pid_file'                 => runtime_path() . 'swoole.pid',
             'log_file'                 => runtime_path() . 'swoole.log',
-
             // 启用Http响应压缩
             'http_compression'         => true,
             // 启用静态文件处理
@@ -61,21 +38,57 @@ return [
             'send_yield'       => true, // 发送数据协程调度
         ],
     ],
-    'websocket'        => [
+    'websocket'    => [
         'enabled'       => false,
-        // 'host' => '0.0.0.0', // 监听地址
-        // 'port' => 9502, // 监听端口
-        // 'sock_type' => SWOOLE_TCP, // sock type 默认为SWOOLE_SOCK_TCP
         'handler'       => '',
         // 'parser' => Parser::class,
         // 'route_file' => base_path() . 'websocket.php',
         'ping_interval' => 25000,
         'ping_timeout'  => 60000,
     ],
+    'hot_reload'   => [
+        'enable'  => false,
+        'name'    => ['*.php'],
+        'notName' => [],
+        'include' => [app_path()],
+        'exclude' => [],
+    ],
+    // 协程控制
+    'coroutine'    => [
+        'enable' => true,
+        'flags'  => SWOOLE_HOOK_ALL,
+    ],
+    // 预加载实例（服务启动前执行）
+    'concretes'    => [],
+    // 重置器 (创建容器时执行)
+    'resetters'    => [],
+    // 清除实例 (创建容器时执行)
+    'instances'    => [],
+    // 共享实例 (允许容器间共享的实例)
+    'penetrates'   => [],
+    // 自定义插件
+    'plugins'      => [],
+    // 自定义进程类
+    'process'      => [],
+    // 自定义任务类
+    'tasks'        => [],
+    // 事件定义类
+    'events'       => [],
+    // 上下文（容器）管理
+    'container'    => [
+        // 上下文销毁时要执行的操作
+        'destroy' => [],
+        // 共享实例 (允许容器间共享的实例，必须服务启动前创建的实例，可搭配预加载使用)
+        'shared'  => [],
+    ],
+    // 监控监测实现
+    'health'       => null,
+    // 运行内存限制
+    'memory_limit' => '512M',
     // 追踪器 (调试)
-    'tracker'          => true,
+    'tracker'      => true,
     // 日志记录
-    'log'              => [
+    'log'          => [
         'console' => true,
         'channel' => [
             // 日志保存目录
@@ -87,7 +100,7 @@ return [
         ],
     ],
     // 连接池
-    'pool'       => [
+    'pool'         => [
         'db'    => [
             'enable'        => true,
             'max_active'    => 3,

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace HZEX\TpSwoole\Task;
+namespace HZEX\TpSwoole\Contract;
 
 interface TaskInterface
 {

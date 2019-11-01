@@ -5,11 +5,8 @@ namespace HZEX\TpSwoole\Plugins;
 
 use Closure;
 use Exception;
-use HZEX\TpSwoole\Contract\ResetterInterface;
 use HZEX\TpSwoole\Contract\WorkerPluginContract;
 use HZEX\TpSwoole\Manager;
-use HZEX\TpSwoole\Sandbox;
-use RuntimeException;
 use Swoole\Coroutine;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
@@ -26,15 +23,6 @@ use unzxin\zswCore\Event;
 
 class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeInterface
 {
-    /**
-     * @var ResetterInterface[]
-     */
-    protected $resetters = [];
-
-    public function __construct()
-    {
-    }
-
     /**
      * 插件是否就绪
      * @param Manager $manager
@@ -100,7 +88,6 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
         if ($server->taskworker) {
             return;
         }
-        $this->initApp();
     }
 
     /**
@@ -114,44 +101,6 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
     protected function onError(HttpServer $server, int $workerId, int $workerPid, int $exitCode, int $signal): void
     {
         $this->requestEnd();
-    }
-
-    /**
-     *
-     */
-    private function initApp()
-    {
-        $this->setInitialResetters();
-    }
-
-    /**
-     * Initialize resetters.
-     */
-    protected function setInitialResetters()
-    {
-        $resetters = [
-        ];
-
-        $resetters = array_merge($resetters, $this->getApp()->config->get('swoole.resetters', []));
-
-        foreach ($resetters as $resetter) {
-            $resetterClass = $this->getApp()->make($resetter);
-            if (!$resetterClass instanceof ResetterInterface) {
-                throw new RuntimeException("{$resetter} must implement " . ResetterInterface::class);
-            }
-            $this->resetters[$resetter] = $resetterClass;
-        }
-    }
-
-    /**
-     * Reset Application.
-     */
-    public function resetApp()
-    {
-        $app = $this->getApp()->make(App::class);
-        foreach ($this->resetters as $resetter) {
-            $resetter->handle($app, $app->make(Sandbox::class));
-        }
     }
 
     /**
@@ -253,7 +202,6 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
         try {
             self::setHandleHttpRequest();
             $request = $this->prepareRequest($sRequest);
-            $this->resetApp();
             $response = $this->run($request);
             $this->sendResponse($response, $sResponse);
             // 请求完成

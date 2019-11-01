@@ -31,7 +31,7 @@ trait InteractsWithWorker
         // 输出调试信息
         $this->logger->info("{$type} start\t#{$workerId}({$server->worker_pid})");
         // 设置进程名称
-        swoole_set_process_name("php-ps: {$type}#{$workerId}");
+        $this->setProcessName("{$type}#{$workerId}");
         // 事件触发
         $this->getEvent()->trigSwooleWorkerStart(func_get_args());
     }

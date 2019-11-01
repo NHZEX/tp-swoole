@@ -16,7 +16,10 @@ php think server
 ```
 
 ## 配置文件
-- TODO
+- 定义插件：\HZEX\TpSwoole\Contract\InteractsWithWorker
+- 定义事件监听：\unzxin\zswCore\Contract\EventSubscribeInterface
+- 定义进程：\unzxin\zswCore\Process\BaseSubProcess
+- 定义任务实现：\HZEX\TpSwoole\Task\TaskInterface
 
 ## 代码引用
 - [think-swoole](https://github.com/top-think/think-swoole)

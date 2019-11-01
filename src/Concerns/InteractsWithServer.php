@@ -31,14 +31,17 @@ trait InteractsWithServer
         // 输出调试信息
         $this->logger->info("master start\t#{$server->master_pid}");
         // 设置进程名称
-        swoole_set_process_name('php-ps: master');
+        $this->setProcessName('master');
         // 响应终端 ctrl+c
         Process::signal(SIGINT, function () use ($server) {
             echo PHP_EOL;
             $server->shutdown();
         });
         // 全局协程
-        Runtime::enableCoroutine($this->config['enable_coroutine'] ?? false);
+        Runtime::enableCoroutine(
+            $this->getConfig('coroutine.enable', true),
+            $this->getConfig('coroutine.flags', SWOOLE_HOOK_ALL)
+        );
         // 事件触发
         $this->getEvent()->trigSwooleStart(func_get_args());
     }
@@ -64,7 +67,7 @@ trait InteractsWithServer
         // 输出调试信息
         $this->logger->info("manager start\t#{$server->manager_pid}");
         // 设置进程名称
-        swoole_set_process_name('php-ps: manager');
+        $this->setProcessName('manager');
         // 事件触发
         $this->getEvent()->trigSwooleManagerStart(func_get_args());
     }

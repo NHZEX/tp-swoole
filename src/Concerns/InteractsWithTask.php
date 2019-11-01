@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace HZEX\TpSwoole\Concerns;
 
+use HZEX\TpSwoole\Contract\TaskInterface;
 use HZEX\TpSwoole\PidManager;
-use HZEX\TpSwoole\Task\TaskInterface;
 use Psr\Log\LoggerInterface;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Server;

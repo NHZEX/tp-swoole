@@ -48,7 +48,7 @@ class Sandbox
      * 不拷贝容器镜像的实例
      * @var array
      */
-    private $penetrates = [
+    private $shared = [
         ContainerInterface::class,
         Container::class,
         App::class,
@@ -67,7 +67,7 @@ class Sandbox
      * 直传实例
      * @var array
      */
-    protected $direct = [];
+    protected $resolveShared = [];
 
     /**
      * 实例化沙箱
@@ -149,11 +149,10 @@ class Sandbox
      */
     protected function setDirectInstances(): void
     {
-        $penetrates = $this->config->get('swoole.penetrates', []);
-        $this->penetrates = array_merge($this->penetrates, $penetrates);
-        $app = $this->getBaseApp();
-        foreach ($this->penetrates as $penetrate) {
-            $this->direct[$app->getAlias($penetrate)] = true;
+        $this->shared = array_merge($this->shared, $this->config->get('swoole.container.shared', []));
+        $app          = $this->getBaseApp();
+        foreach ($this->shared as $penetrate) {
+            $this->resolveShared[$app->getAlias($penetrate)] = true;
         }
     }
 
@@ -163,7 +162,7 @@ class Sandbox
      */
     public function addDirectInstances(string $class): void
     {
-        $this->direct[$this->getBaseApp()->getAlias($class)] = true;
+        $this->resolveShared[$this->getBaseApp()->getAlias($class)] = true;
     }
 
     /**
@@ -194,7 +193,7 @@ class Sandbox
         /** @var array $instances */
         $instances = $instancesRef->getValue();
         foreach ($instances as $class => $object) {
-            if (isset($this->direct[$class]) || isset($this->direct[get_class($object)])) {
+            if (isset($this->resolveShared[$class]) || isset($this->resolveShared[get_class($object)])) {
                 $instances[$class] = $object;
             } else {
                 $instances[$class] = clone $object;

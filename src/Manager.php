@@ -8,6 +8,7 @@ use HZEX\TpSwoole\Concerns\InteractsWithHttp;
 use HZEX\TpSwoole\Concerns\InteractsWithServer;
 use HZEX\TpSwoole\Concerns\InteractsWithTask;
 use HZEX\TpSwoole\Concerns\InteractsWithWorker;
+use HZEX\TpSwoole\Contract\TaskInterface;
 use HZEX\TpSwoole\Contract\WorkerPluginContract;
 use HZEX\TpSwoole\Facade\Server as ServerFacade;
 use HZEX\TpSwoole\Log\MonologConsoleHandler;
@@ -17,7 +18,6 @@ use HZEX\TpSwoole\Plugins\Http;
 use HZEX\TpSwoole\Plugins\WebSocket;
 use HZEX\TpSwoole\Process\FileWatch;
 use HZEX\TpSwoole\Task\SocketLogTask;
-use HZEX\TpSwoole\Task\TaskInterface;
 use HZEX\TpSwoole\Tp\Pool\Cache;
 use HZEX\TpSwoole\Tp\Pool\Db;
 use HZEX\TpSwoole\VirtualContainer as SwooleApp;
@@ -382,6 +382,17 @@ class Manager implements
     }
 
     /**
+     * 获取配置
+     * @param string $name
+     * @param null   $default
+     * @return mixed
+     */
+    public function getConfig(string $name, $default = null)
+    {
+        return $this->container->config->get("swoole.{$name}", $default);
+    }
+
+    /**
      * @return Sandbox
      */
     public function getSandbox(): Sandbox
@@ -415,6 +426,25 @@ class Manager implements
     public function getEvent(): Event
     {
         return $this->app->make(Event::class);
+    }
+
+    /**
+     * Set process name.
+     *
+     * @param $process
+     */
+    protected function setProcessName($process)
+    {
+        // Mac OSX不支持进程重命名
+        if (stristr(PHP_OS, 'DAR')) {
+            return;
+        }
+
+        $appName    = $this->container->config->get('app.name', 'tp');
+
+        $name = "php-ps: {$process} for {$appName}";
+
+        swoole_set_process_name($name);
     }
 
     /**

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace HZEX\TpSwoole\Task;
 
+use HZEX\TpSwoole\Contract\TaskInterface;
 use Swoole\Server;
 use think\App;
 
