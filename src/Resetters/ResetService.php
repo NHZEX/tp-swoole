@@ -4,8 +4,10 @@ namespace HZEX\TpSwoole\Resetters;
 
 use HZEX\TpSwoole\Contract\ResetterInterface;
 use HZEX\TpSwoole\Sandbox;
+use ReflectionException;
 use think\App;
 use think\Container;
+use function HuangZx\ref_get_prop;
 
 /**
  * Class ResetService
@@ -20,6 +22,7 @@ class ResetService implements ResetterInterface
      *
      * @param Container|App $container
      * @param Sandbox       $sandbox
+     * @throws ReflectionException
      */
     public function handle(App $container, Sandbox $sandbox): void
     {
@@ -31,6 +34,12 @@ class ResetService implements ResetterInterface
             if (method_exists($service, 'boot')) {
                 $container->invoke([$service, 'boot']);
             }
+        }
+
+        $services = ref_get_prop($container, 'services')->getValue();
+
+        foreach ($services as $service) {
+            $this->rebindServiceContainer($container, $service);
         }
     }
 

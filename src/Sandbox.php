@@ -20,7 +20,6 @@ use think\App;
 use think\Config;
 use think\Container;
 use think\Event;
-use think\service\PaginatorService;
 use unzxin\zswCore\Event as SwooleEvent;
 use function HuangZx\ref_get_prop;
 
@@ -283,11 +282,7 @@ class Sandbox
     {
         $app = $this->getBaseApp();
 
-        $services = [
-            PaginatorService::class,
-        ];
-
-        $services = array_merge($services, $this->config->get('swoole.services', []));
+        $services = $this->config->get('swoole.services', []);
 
         foreach ($services as $service) {
             if (class_exists($service) && !in_array($service, $this->services)) {
