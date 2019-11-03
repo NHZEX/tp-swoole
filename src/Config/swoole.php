@@ -101,12 +101,12 @@ return [
     'pool'         => [
         'db'    => [
             'enable'        => true,
-            'max_active'    => 3,
+            'max_active'    => 5,
             'max_wait_time' => 5,
         ],
         'cache' => [
             'enable'        => true,
-            'max_active'    => 3,
+            'max_active'    => 8,
             'max_wait_time' => 5,
         ],
     ],

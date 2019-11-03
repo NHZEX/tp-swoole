@@ -9,11 +9,13 @@ use Swoole\Http\Server as HttpServer;
 use Swoole\Server;
 use Swoole\Timer;
 use Swoole\WebSocket\Server as WsServer;
+use think\App;
 use unzxin\zswCore\Event;
 
 /**
  * Trait InteractsWithServer
  * @package HZEX\TpSwoole\Concerns
+ * @property App $container
  * @method Event getEvent()
  * @property PidManager $pidManager
  * @property LoggerInterface $logger
@@ -34,6 +36,13 @@ trait InteractsWithWorker
         $this->setProcessName("{$type}#{$workerId}");
         // 事件触发
         $this->getEvent()->trigSwooleWorkerStart(func_get_args());
+        // 定时Gc
+        if (!$this->container->isDebug()) {
+            Timer::tick(1000 * 5, function () {
+                gc_collect_cycles();
+                stats_memory();
+            });
+        }
     }
 
     /**

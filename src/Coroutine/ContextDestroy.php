@@ -69,6 +69,15 @@ class ContextDestroy
             }
         }
 
+        // 强制释放容器实例
+        $unInstances = function () {
+            foreach (array_keys($this->{'instances'}) as $key) {
+                unset($this->{'instances'}[$key]);
+            }
+        };
+        $unInstances = $unInstances->bindTo($this->app, $this->app);
+        $unInstances();
+
         // 调试模式下尽快执行垃圾回收
         if ($this->debug) {
             // 强制执行垃圾回收

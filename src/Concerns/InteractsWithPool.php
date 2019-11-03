@@ -43,7 +43,8 @@ trait InteractsWithPool
 
             if ($connection === false) {
                 throw new RuntimeException(sprintf(
-                    'Borrow the connection timeout in %.2f(s), connections in pool: %d, all connections: %d',
+                    'Borrow the connection(%s) timeout in %.2f(s), connections in pool: %d, all connections: %d',
+                    $name,
                     $this->getPoolMaxWaitTime($name),
                     $pool->length(),
                     $this->connectionCount[$name] ?? 0
