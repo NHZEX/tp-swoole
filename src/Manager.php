@@ -191,6 +191,7 @@ class Manager implements
             $this->app = new SwooleApp($this->container->getRootPath());
             $this->app->bind(SwooleApp::class, App::class);
             $this->app->bind(ContainerInterface::class, Container::class);
+            $this->app->instance('swoole.log', $this->getLogger());
             $this->app->instance(Manager::class, $this);
             $this->app->instance('swoole.server', $this->container->make('swoole.server'));
             $this->app->instance(PidManager::class, $this->container->make(PidManager::class));

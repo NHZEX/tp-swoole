@@ -15,6 +15,6 @@ class ServerLogger extends Facade
 {
     protected static function getFacadeClass()
     {
-        return 'monolog';
+        return 'swoole.log';
     }
 }

@@ -24,6 +24,11 @@ class Service extends \think\Service
     protected static $server;
 
     /**
+     * @var Logger
+     */
+    protected static $logger;
+
+    /**
      * @return HttpServer|Server|WebsocketServer
      */
     public static function getServer()
@@ -54,7 +59,12 @@ class Service extends \think\Service
         });
         $this->app->bind('manager', Manager::class);
 
-        $this->initLogger();
+        $this->app->bind('swoole.log', function () {
+            if (null === static::$logger) {
+                $this->initLogger();
+            }
+            return static::$logger;
+        });
         return true;
     }
 
@@ -144,7 +154,6 @@ class Service extends \think\Service
         $logger = new Logger('OPS');
         $logger->pushHandler($handler);
 
-        $this->app->instance(Logger::class, $logger);
-        $this->app->bind('monolog', Logger::class);
+        self::$logger = $logger;
     }
 }
