@@ -5,6 +5,7 @@ namespace HZEX\TpSwoole\Coroutine;
 
 use Closure;
 use HZEX\TpSwoole\Contract\ContractDestroyInterface;
+use think\App;
 use think\Container;
 use function gc_collect_cycles;
 use function stats_memory;
@@ -12,7 +13,7 @@ use function stats_memory;
 class ContextDestroy
 {
     /**
-     * @var Container
+     * @var Container|App
      */
     private $app;
 

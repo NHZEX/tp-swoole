@@ -206,7 +206,10 @@ class Sandbox
     protected function setContext(Container $snapshot): void
     {
         Context::setData('__app', $snapshot);
-        Context::setData('__destroy', new ContextDestroy($snapshot, $this->containerDestroy));
+        $destroy = new ContextDestroy($snapshot, $this->containerDestroy);
+        defer(function () use ($destroy) {
+            $destroy->__destruct();
+        });
     }
 
     /**
