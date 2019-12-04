@@ -3,6 +3,7 @@
 namespace HZEX\TpSwoole\Concerns;
 
 use RuntimeException;
+use Swoole\Coroutine;
 use Swoole\Coroutine\Channel;
 
 trait InteractsWithPool
@@ -28,6 +29,10 @@ trait InteractsWithPool
 
     protected function getPoolConnection($name)
     {
+        if (-1 === Coroutine::getCid()) {
+            return $this->createPoolConnection($name);
+        }
+
         $pool = $this->getPool($name);
 
         if (!isset($this->connectionCount[$name])) {

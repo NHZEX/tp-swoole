@@ -7,9 +7,11 @@ use HZEX\TpSwoole\Command\ServerCommand;
 use InvalidArgumentException;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Logger;
+use Psr\Container\ContainerInterface;
 use Swoole\Http\Server as HttpServer;
 use Swoole\Server as Server;
 use Swoole\WebSocket\Server as WebsocketServer;
+use think\Container;
 use unzxin\zswCore\Event as SwooleEvent;
 
 class Service extends \think\Service
@@ -58,6 +60,8 @@ class Service extends \think\Service
             return new PidManager($this->app->config->get('swoole.server.options.pid_file'));
         });
         $this->app->bind('manager', Manager::class);
+        $this->app->bind(Container::class, 'app');
+        $this->app->bind(ContainerInterface::class, 'app');
 
         $this->app->bind('swoole.log', function () {
             if (null === static::$logger) {

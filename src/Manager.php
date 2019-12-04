@@ -189,8 +189,9 @@ class Manager implements
     {
         if (!$this->app instanceof SwooleApp) {
             $this->app = new SwooleApp($this->container->getRootPath());
-            $this->app->bind(SwooleApp::class, App::class);
-            $this->app->bind(ContainerInterface::class, Container::class);
+            $this->app->bind(SwooleApp::class, $this->app);
+            $this->app->bind(Container::class, $this->app);
+            $this->app->bind(ContainerInterface::class, $this->app);
             $this->app->instance('swoole.log', $this->getLogger());
             $this->app->instance(Manager::class, $this);
             $this->app->instance('swoole.server', $this->container->make('swoole.server'));
