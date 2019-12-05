@@ -11,29 +11,38 @@
 
 namespace HZEX\TpSwoole\Tp\Log\Driver;
 
-use HZEX\TpSwoole\Task\SocketLogTask;
+use Psr\Container\NotFoundExceptionInterface;
+use Swoole\Coroutine;
+use Swoole\Coroutine\Http\Client;
 use think\App;
 use think\contract\LogHandlerInterface;
 
 /**
  * github: https://github.com/luofei614/SocketLog
  * @author luofei614<weibo.com/luofei614>
+ * TODO 待 Tp6新版本发布
  */
 class SocketLog implements LogHandlerInterface
 {
-    public $port = 1116; //SocketLog 服务的http的端口号
+    protected $app;
 
     protected $config = [
         // socket服务器地址
         'host'                => 'localhost',
+        // socket服务器端口
+        'port'                => 1116,
         // 是否显示加载的文件列表
         'show_included_files' => false,
         // 日志强制记录到配置的client_id
         'force_client_ids'    => [],
         // 限制允许读取日志的client_id
         'allow_client_ids'    => [],
-        //输出到浏览器默认展开的日志级别
+        // 调试开关
+        'debug'               => false,
+        // 输出到浏览器时默认展开的日志级别
         'expand_level'        => ['debug'],
+        // 日志头渲染回调
+        'format_head'         => null,
     ];
 
     protected $css = [
@@ -51,30 +60,29 @@ class SocketLog implements LogHandlerInterface
     /**
      * 架构函数
      * @access public
+     * @param App   $app
      * @param array $config 缓存参数
      */
-    public function __construct(array $config = [])
+    public function __construct(App $app, array $config = [])
     {
+        $this->app = $app;
+
         if (!empty($config)) {
             $this->config = array_merge($this->config, $config);
         }
-    }
 
-    /**
-     * @return App
-     */
-    private function getApp(): App
-    {
-        return App::getInstance();
+        if (!isset($config['debug'])) {
+            $this->config['debug'] = $app->isDebug();
+        }
     }
 
     /**
      * 调试输出接口
      * @access public
-     * @param  array     $log 日志信息
+     * @param array $log 日志信息
      * @return bool
      */
-    public function save(array $log): bool
+    public function save(array $log = []): bool
     {
         if (!$this->check()) {
             return false;
@@ -82,32 +90,34 @@ class SocketLog implements LogHandlerInterface
 
         $trace = [];
 
-        $app = $this->getApp();
-        if ($app->isDebug()) {
-            $runtime    = round(microtime(true) - $app->getBeginTime(), 10);
-            $reqs       = $runtime > 0 ? number_format(1 / $runtime, 2) : '∞';
-            $time_str   = ' [运行时间：' . number_format($runtime, 6) . 's][吞吐率：' . $reqs . 'req/s]';
-            $memory_use = number_format((memory_get_usage() - $app->getBeginMem()) / 1024, 2);
-            $memory_str = ' [内存消耗：' . $memory_use . 'kb]';
-            $file_load  = ' [文件加载：' . count(get_included_files()) . ']';
-
-            if ($app->exists('request')) {
-                $current_uri = $app->request->host(). $app->request->baseUrl();
+        if ($this->config['debug']) {
+            if ($this->app->exists('request')) {
+                $current_uri = $this->app->request->url(true);
             } else {
-                $current_uri = 'cmd:' . implode(' ', $_SERVER['argv'] ?? ['unknown']);
+                $current_uri = 'cmd:' . implode(' ', $_SERVER['argv'] ?? []);
+            }
+
+            if (!empty($this->config['format_head'])) {
+                try {
+                    $current_uri = $this->app->invoke($this->config['format_head'], [$current_uri]);
+                } catch (NotFoundExceptionInterface $notFoundException) {
+                    // Ignore exception
+                }
             }
 
             // 基本信息
             $trace[] = [
                 'type' => 'group',
-                'msg'  => $current_uri . $time_str . $memory_str . $file_load,
+                'msg'  => $current_uri,
                 'css'  => $this->css['page'],
             ];
         }
 
+        $expand_level = array_flip($this->config['expand_level']);
+
         foreach ($log as $type => $val) {
             $trace[] = [
-                'type' => in_array($type, $this->config['expand_level']) ? 'group' : 'groupCollapsed',
+                'type' => isset($expand_level[$type]) ? 'group' : 'groupCollapsed',
                 'msg'  => '[ ' . $type . ' ]',
                 'css'  => $this->css[$type] ?? '',
             ];
@@ -196,9 +206,14 @@ class SocketLog implements LogHandlerInterface
         $msg     = json_encode($logs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR);
         $address = '/' . $client_id; //将client_id作为地址， server端通过地址判断将日志发布给谁
 
-        $this->send($this->config['host'], $msg, $address);
+        $this->send($this->config['host'], $this->config['port'], $msg, $address);
     }
 
+    /**
+     * 检测客户授权
+     * @access protected
+     * @return bool
+     */
     protected function check()
     {
         $tabid = $this->getClientArg('tabid');
@@ -229,22 +244,28 @@ class SocketLog implements LogHandlerInterface
         return true;
     }
 
-    protected function getClientArg($name)
+    /**
+     * 获取客户参数
+     * @access protected
+     * @param string $name
+     * @return string
+     */
+    protected function getClientArg(string $name)
     {
-        $app = $this->getApp();
-        $key = 'HTTP_USER_AGENT';
-        if (empty($app->request->server('HTTP_SOCKETLOG', ''))) {
-            $key = 'HTTP_SOCKETLOG';
-        }
-
-        if (empty($socketLog = $app->request->server($key))) {
-            return [];
+        if (!$this->app->exists('request')) {
+            return '';
         }
 
         if (empty($this->clientArg)) {
+            if (empty($socketLog = $this->app->request->header('socketlog'))) {
+                if (empty($socketLog = $this->app->request->header('User-Agent'))) {
+                    return '';
+                }
+            }
+
             if (!preg_match('/SocketLog\((.*?)\)/', $socketLog, $match)) {
-                $this->clientArg = ['tabid' => null];
-                return [];
+                $this->clientArg = ['tabid' => null, 'client_id' => null];
+                return '';
             }
             parse_str($match[1] ?? '', $this->clientArg);
         }
@@ -253,21 +274,21 @@ class SocketLog implements LogHandlerInterface
             return $this->clientArg[$name];
         }
 
-        return [];
+        return '';
     }
 
     /**
      * @access protected
      * @param string $host    - $host of socket server
+     * @param int    $port    - $port of socket server
      * @param string $message - 发送的消息
      * @param string $address - 地址
      * @return bool
      */
-    protected function send($host, $message = '', $address = '/')
+    protected function send($host, $port, $message = '', $address = '/')
     {
-        $app = $this->getApp();
-        if (false === $app->has('swoole.server') || 0 === $app->make('swoole.server')->manager_pid) {
-            $url = 'http://' . $host . ':' . $this->port . $address;
+        if (false === $this->app->has('swoole.server') || 0 === $this->app->make('swoole.server')->manager_pid) {
+            $url = 'http://' . $host . ':' . $port . $address;
             $ch  = curl_init();
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_POST, true);
@@ -282,7 +303,20 @@ class SocketLog implements LogHandlerInterface
             return curl_exec($ch);
         }
 
-        SocketLogTask::push($host, $this->port, $address, $message);
+        Coroutine::create(function () use ($host, $port, $address, $message) {
+            $cli = new Client($host, $port);
+            $cli->setMethod('POST');
+            $cli->setHeaders([
+                'Host' => $host,
+                'Content-Type' => 'application/json;charset=UTF-8',
+                'Accept' => 'text/html,application/xhtml+xml,application/xml',
+                'Accept-Encoding' => 'gzip',
+            ]);
+            $cli->set(['timeout' => 3, 'keep_alive' => true]);
+            $cli->post($address, $message);
+            // 200 === $cli->statusCode
+        });
+
         return true;
     }
 }

@@ -30,6 +30,7 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
      */
     public function isReady(Manager $manager): bool
     {
+        //  TODO 待 Tp6新版本发布
         $manager->getApp()->bind('request', \HZEX\TpSwoole\Tp\Request::class);
         $manager->getApp()->bind(\think\Http::class, \HZEX\TpSwoole\Tp\Http::class);
         return $manager->getSwoole() instanceof HttpServer;
@@ -105,28 +106,22 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
 
     /**
      * @param Request $req
-     * @return \HZEX\TpSwoole\Tp\Request
+     * @return \think\Request
      */
     protected function prepareRequest(Request $req)
     {
         $header = $req->header ?: [];
         $server = $req->server ?: [];
 
-        // 暂时性兼容request类型限制的解决方案
-        if (isset($server['server_port'])) {
-            $server['server_port'] = (string) $server['server_port'];
-        }
-        if (isset($server['remote_port'])) {
-            $server['remote_port'] = (string) $server['remote_port'];
-        }
-
         foreach ($header as $key => $value) {
             $server["http_" . str_replace('-', '_', $key)] = $value;
         }
 
+        //  TODO 待 Tp6新版本发布
         // 重新实例化请求对象 处理swoole请求数据
-        /** @var \HZEX\TpSwoole\Tp\Request $request */
-        $request = $this->getApp()->request;
+        /** @var \think\Request|\HZEX\TpSwoole\Tp\Request $request */
+        $request = $this->getApp()->make('request', [], true);
+
         $queryStr = !empty($req->server['query_string']) ? '?' . $req->server['query_string'] : '';
         $request = $request
             ->withHeader($header)
@@ -162,7 +157,7 @@ class Http implements WorkerPluginContract, SwooleHttpInterface, EventSubscribeI
         $swooleResponse->status($thinkResponse->getCode());
 
         foreach ($this->getApp()->cookie->getCookie() as $name => $val) {
-            list($value, $expire, $option) = $val;
+            [$value, $expire, $option] = $val;
 
             $swooleResponse->cookie(
                 $name,
